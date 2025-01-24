@@ -1,3 +1,6 @@
+#pragma once
+
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <stdexcept>
@@ -7,49 +10,38 @@
 
 namespace Linear {
 
-template <typename ElemType,
-          typename = typename std::enable_if<
-              std::is_arithmetic<ElemType>::value, ElemType>::type>
+template <int N, int M>
 class Matrix {
-protected:
 public:
   using LengthType = int;
+  using ElemType = double;
   static constexpr const ElemType default_elem = 0;
 
-  Matrix() : width_(0), height_(0), matrix_() {}
-
-  Matrix(LengthType height, LengthType width, ElemType elem = default_elem)
-      : height_(height),
-        width_(width),
-        matrix_(this->height_ * this->width_, elem) {
+  Matrix(ElemType elem = default_elem) : height_(N), width_(M) {
     if (this->height_ < 0 || this->width_ < 0) {
       throw std::invalid_argument("Matrix dimensions must be non-negative");
     }
-  }
-  Matrix(const std::vector<ElemType>& other, LengthType width = 1)
-      : height_((width == 0) ? 0 : (other.size() / width)),
-        width_((other.size() == 0) ? 0 : width),
-        matrix_(other) {
-    if (this->matrix_.size() != this->height_ * this->width_) {
-      throw std::invalid_argument("Matrix dimensions mismatch");
-    }
-  }
-
-  Matrix(const std::vector<std::vector<ElemType>>& other)
-      : height_(other.size()),
-        width_(other.front().size()),
-        matrix_(this->height_ * this->width_) {
-    for (LengthType i = 0; i < this->height_; ++i) {
-      for (LengthType j = 0; j < this->width_; ++j) {
-        this->At(i, j) = other[i][j];
+    for (LengthType i = 0; i < GetHeight(); ++i) {
+      for (LengthType j = 0; j < GetWidth(); ++j) {
+        At(i, j) = elem;
       }
     }
   }
 
-  Matrix(const Matrix& other)
-      : height_(other.GetHeight()),
-        width_(other.GetWidth()),
-        matrix_(other.GetData()) {}
+  Matrix(const std::vector<std::vector<ElemType>>& other)
+      : height_(N), width_(M) {
+    if (other.size() != N || (other.size() > 0 && other[0].size() != M)) {
+      throw std::invalid_argument("Input dimensions do not match matrix size.");
+    }
+    for (LengthType i = 0; i < N; ++i) {
+      for (LengthType j = 0; j < M; ++j) {
+        At(i, j) = other[i][j];
+      }
+    }
+  }
+
+  Matrix(const Matrix<N, M>& other)
+      : height_(N), width_(M), matrix_(other.matrix_) {}
   Matrix(Matrix&& other) noexcept
       : height_(std::move(other.height_)),
         width_(std::move(other.width_)),
@@ -57,7 +49,7 @@ public:
   Matrix& operator=(const Matrix& other) {
     this->height_ = other.GetHeight();
     this->width_ = other.GetWidth();
-    this->matrix_ = other.GetData();
+    this->matrix_ = other.matrix_;
     return *this;
   }
   Matrix& operator=(Matrix&& other) noexcept {
@@ -69,8 +61,8 @@ public:
 
   ~Matrix() = default;
 
-  Matrix<ElemType> Transpose() const {
-    Matrix<ElemType> result(this->width_, this->height_);
+  Matrix<N, M> Transpose() const {
+    Matrix<N, M> result;
     for (LengthType i = 0; i < this->height_; ++i) {
       for (LengthType j = 0; j < this->width_; ++j) {
         result.At(j, i) = this->At(i, j);
@@ -90,8 +82,6 @@ public:
   std::pair<LengthType, LengthType> GetSize() const {
     return std::make_pair(this->height_, this->width_);
   }
-  std::vector<ElemType>& GetData() { return this->matrix_; }
-  const std::vector<ElemType>& GetData() const { return this->matrix_; }
   ElemType& At(LengthType row, LengthType col) {
     if (row >= this->height_ || col >= this->width_) {
       throw std::invalid_argument(
@@ -107,11 +97,11 @@ public:
     return matrix_[row * this->width_ + col];
   }
 
-  Matrix<ElemType> operator+(const Matrix<ElemType>& other) const {
+  Matrix<N, M> operator+(const Matrix<N, M>& other) const {
     if (GetSize() != other.GetSize()) {
       throw std::invalid_argument("Matrix size mismatch in operator+");
     }
-    Matrix<ElemType> result(*this);
+    Matrix<N, M> result(*this);
 
     for (LengthType i = 0; i < this->height_; ++i) {
       for (LengthType j = 0; j < this->width_; ++j) {
@@ -121,11 +111,11 @@ public:
 
     return result;
   }
-  Matrix<ElemType> operator-(const Matrix<ElemType>& other) const {
+  Matrix<N, M> operator-(const Matrix<N, M>& other) const {
     if (GetSize() != other.GetSize()) {
       throw std::invalid_argument("Matrix size mismatch in operator-");
     }
-    Matrix<ElemType> result(*this);
+    Matrix<N, M> result(*this);
 
     for (LengthType i = 0; i < this->height_; ++i) {
       for (LengthType j = 0; j < this->width_; ++j) {
@@ -134,11 +124,12 @@ public:
     }
     return result;
   }
-  Matrix<ElemType> operator*(const Matrix<ElemType>& other) const {
+  template <int K>
+  Matrix<N, K> operator*(const Matrix<M, K>& other) const {
     if (this->GetWidth() != other.GetHeight()) {
       throw std::invalid_argument("Matrix size mismatch in operator*");
     }
-    Matrix<ElemType> result(this->GetHeight(), other.GetWidth());
+    Matrix<N, K> result;
 
     for (LengthType i = 0; i < result.GetHeight(); ++i) {
       for (LengthType j = 0; j < result.GetWidth(); ++j) {
@@ -150,8 +141,8 @@ public:
     return result;
   }
 
-  Matrix<ElemType> operator*(const ElemType num) const {
-    Matrix<ElemType> result(*this);
+  Matrix<N, M> operator*(const ElemType num) const {
+    Matrix<N, M> result(*this);
 
     for (LengthType i = 0; i < result.GetHeight(); ++i) {
       for (LengthType j = 0; j < result.GetWidth(); ++j) {
@@ -161,7 +152,7 @@ public:
     return result;
   }
 
-  Matrix<ElemType>& operator+=(const Matrix<ElemType>& other) {
+  Matrix<N, M>& operator+=(const Matrix<N, M>& other) {
     for (LengthType i = 0; i < this->height_; ++i) {
       for (LengthType j = 0; j < this->width_; ++j) {
         this->At(i, j) += other.At(i, j);
@@ -169,7 +160,7 @@ public:
     }
     return *this;
   }
-  Matrix<ElemType>& operator-=(const Matrix<ElemType>& other) {
+  Matrix<N, M>& operator-=(const Matrix<N, M>& other) {
     for (LengthType i = 0; i < this->height_; ++i) {
       for (LengthType j = 0; j < this->width_; ++j) {
         this->At(i, j) -= other.At(i, j);
@@ -177,13 +168,10 @@ public:
     }
     return *this;
   }
-  Matrix<ElemType>& operator*=(const Matrix<ElemType>& other) {
+  template <int K>
+  Matrix<N, K>& operator*=(const Matrix<M, K>& other) {
     *this = *this * other;
     return *this;
-  }
-
-  Matrix<ElemType> DotProd(const Matrix<ElemType>& other) const {
-    return this->Transpose() * other;
   }
 
   void FirstTypeTransform(LengthType row_from, LengthType row_to,
@@ -205,14 +193,14 @@ public:
     }
   }
 
-  Matrix<ElemType> Inv() {
+  Matrix<N, M> Inv() {
     // Gaussian algorithm impl
     if (this->GetHeight() != this->GetWidth() || this->GetHeight() == 0) {
       throw std::runtime_error("Matrix shape mismath for inv op");
     }
 
-    Matrix<ElemType> curr(*this);
-    Matrix<ElemType> result(this->GetHeight(), this->GetWidth());
+    Matrix<N, M> curr(*this);
+    Matrix<N, M> result(this->GetHeight(), this->GetWidth());
     for (LengthType col = 0; col < result.GetWidth(); ++col) {
       result.At(col, col) = 1;
     }
@@ -261,7 +249,7 @@ public:
           "\"Det\" op is defined only for square matrices");
     }
 
-    Matrix<ElemType> curr(*this);
+    Matrix<N, M> curr(*this);
     ElemType result = 1;
 
     for (LengthType col = 0; col < curr.GetWidth(); ++col) {
@@ -302,40 +290,42 @@ public:
     return result;
   }
 
-  static Matrix<ElemType> Eye(LengthType rang) {
-    Matrix<ElemType> result(rang, rang);
-    for (LengthType i = 0; i < rang; ++i) {
+  static Matrix<N, N> Eye() {
+    Matrix<N, N> result{};
+    for (LengthType i = 0; i < result.GetHeight(); ++i) {
       result.At(i, i) = 1.0;
     }
     return result;
   }
 
-  static Matrix<ElemType> Diag(const std::vector<ElemType>& list) {
-    Matrix<ElemType> result(list.size(), list.size());
+  template <int Length>
+  static Matrix<Length, Length> Diag(const std::vector<ElemType>& list) {
+    Matrix<Length, Length> result(list.size(), list.size());
     for (LengthType i = 0; i < list.size(); ++i) {
       result.At(i, i) = list[i];
     }
     return result;
   }
 
-  static Matrix<ElemType> MakeVector(const std::vector<ElemType>& list,
-                                     bool is_vertical = true) {
-    Matrix<ElemType> result(list.size(), (list.size() == 0) ? 0 : 1);
-    for (LengthType i = 0; i < list.size(); ++i) {
-      result.At(i, 0) = list[i];
-    }
+  template <typename T1, typename T2, typename T3, typename T4>
+  static Matrix<4, 1> MakeVector(T1 x, T2 y, T3 z, T4 v) {
+    Matrix<4, 1> result{};
+    result.At(0, 0) = x;
+    result.At(1, 0) = y;
+    result.At(2, 0) = z;
+    result.At(3, 0) = v;
     return result;
   }
 
-  static Matrix<ElemType> MakeRotationMatrix(ElemType angle_x = 0,
-                                             ElemType angle_y = 0,
-                                             ElemType angle_z = 0) {
+  static Matrix<4, 4> MakeRotationMatrix(ElemType angle_x = 0,
+                                         ElemType angle_y = 0,
+                                         ElemType angle_z = 0) {
     return RotateX(angle_x) * RotateY(angle_y) * RotateZ(angle_z);
   }
 
 protected:
-  static Matrix<ElemType> RotateX(ElemType angle) {
-    Matrix<ElemType> result(4, 4);
+  static Matrix<4, 4> RotateX(ElemType angle) {
+    Matrix<4, 4> result{};
 
     result.At(result.GetHeight() - 1, result.GetWidth() - 1) = 1;
     result.At(0, 0) = 1;
@@ -347,8 +337,8 @@ protected:
 
     return result;
   }
-  static Matrix<ElemType> RotateY(ElemType angle) {
-    Matrix<ElemType> result(4, 4);
+  static Matrix<4, 4> RotateY(ElemType angle) {
+    Matrix<4, 4> result{};
 
     result.At(result.GetHeight() - 1, result.GetWidth() - 1) = 1;
     result.At(1, 1) = 1;
@@ -360,8 +350,8 @@ protected:
 
     return result;
   }
-  static Matrix<ElemType> RotateZ(ElemType angle) {
-    Matrix<ElemType> result(4, 4);
+  static Matrix<4, 4> RotateZ(ElemType angle) {
+    Matrix<4, 4> result{};
 
     result.At(result.GetHeight() - 1, result.GetWidth() - 1) = 1;
     result.At(2, 2) = 1;
@@ -376,7 +366,7 @@ protected:
 
   LengthType height_;
   LengthType width_;
-  std::vector<ElemType> matrix_;
+  std::array<ElemType, N * M> matrix_;
 };
 
 }  // namespace Linear
