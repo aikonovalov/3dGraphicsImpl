@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Point3d.h"
+#include <queue>
+#include "Triangle.h"
 
 namespace Linear {
 
@@ -15,6 +16,8 @@ public:
 
   ElemType GetDistance(const Point3d&);
   bool GetIntersect(const std::pair<Point3d, Point3d>&, Point3d&);
+
+  void ClipThrough(std::queue<Linear::Triangle>&);
 
   void Rotate(const Matrix<4, 4>&);
 
