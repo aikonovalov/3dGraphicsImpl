@@ -1,5 +1,4 @@
 #include "Camera.h"
-#include "Holder.h"
 
 namespace Scene {
 
