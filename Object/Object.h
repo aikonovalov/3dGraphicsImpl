@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
-#include "../MathUtils/Triangle.h"
+#include "TriangleBuffer.h"
 
 namespace Scene {
 
@@ -24,27 +24,28 @@ public:
 
   ~Object();
 
-  Linear::Triangle& GetTriangle(size_t);
-
-private:
-  size_t triangles_cnt_;
-  std::unique_ptr<char[]> triangle_holder_;
-};
-
-class ObjectAlt {
-  using ElemType = double;
-
-public:
-  ObjectAlt();
-  ObjectAlt(const std::vector<Linear::Triangle>&);
-
-  ~ObjectAlt();
+  size_t GetTrianglesCount() const;
 
   Linear::Triangle& GetTriangle(size_t);
 
 private:
-  size_t triangles_cnt_;
-  std::vector<Linear::Triangle> triangle_holder_;
+  TriangleBuffer buffer;
 };
+
+// class ObjectAlt {
+//   using ElemType = double;
+
+// public:
+//   ObjectAlt();
+//   ObjectAlt(const std::vector<Linear::Triangle>&);
+
+//   ~ObjectAlt();
+
+//   Linear::Triangle& GetTriangle(size_t);
+
+// private:
+//   size_t triangles_cnt_;
+//   std::vector<Linear::Triangle> triangle_holder_;
+// };
 
 }  // namespace Scene
