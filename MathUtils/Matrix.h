@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <stdexcept>
@@ -18,9 +19,8 @@ public:
   static constexpr const ElemType default_elem = 0;
 
   Matrix(ElemType elem = default_elem) : height_(N), width_(M) {
-    if (this->height_ < 0 || this->width_ < 0) {
-      throw std::invalid_argument("Matrix dimensions must be non-negative");
-    }
+    assert(height_ >= 0 && width_ >= 0 &&
+           "Matrix dimensions must be non-negative");
     for (LengthType i = 0; i < GetHeight(); ++i) {
       for (LengthType j = 0; j < GetWidth(); ++j) {
         At(i, j) = elem;
@@ -30,9 +30,8 @@ public:
 
   Matrix(const std::vector<std::vector<ElemType>>& other)
       : height_(N), width_(M) {
-    if (other.size() != N || (other.size() > 0 && other[0].size() != M)) {
-      throw std::invalid_argument("Input dimensions do not match matrix size.");
-    }
+    assert((other.size() == N && (other.size() > 0 && other[0].size() == M)) &&
+           "Input dimensions do not match matrix size.");
     for (LengthType i = 0; i < N; ++i) {
       for (LengthType j = 0; j < M; ++j) {
         At(i, j) = other[i][j];
@@ -83,24 +82,19 @@ public:
     return std::make_pair(this->height_, this->width_);
   }
   ElemType& At(LengthType row, LengthType col) {
-    if (row >= this->height_ || col >= this->width_) {
-      throw std::invalid_argument(
-          "In Matrix's \"At\" method : arg' size mismatch");
-    }
+    assert(row < this->height_ && col < this->width_ &&
+           "In Matrix's \"At\" method : arg' size mismatch");
     return matrix_[row * this->width_ + col];
   }
   const ElemType& At(LengthType row, LengthType col) const {
-    if (row >= this->height_ || col >= this->width_) {
-      throw std::invalid_argument(
-          "In Matrix's \"At\" method : arg' size mismatch");
-    }
+    assert(row < this->height_ && col < this->width_ &&
+           "In Matrix's \"At\" method : arg' size mismatch");
     return matrix_[row * this->width_ + col];
   }
 
   Matrix<N, M> operator+(const Matrix<N, M>& other) const {
-    if (GetSize() != other.GetSize()) {
-      throw std::invalid_argument("Matrix size mismatch in operator+");
-    }
+    assert((GetSize() == other.GetSize()) &&
+           "Matrix size mismatch in operator+");
     Matrix<N, M> result(*this);
 
     for (LengthType i = 0; i < this->height_; ++i) {
@@ -112,9 +106,9 @@ public:
     return result;
   }
   Matrix<N, M> operator-(const Matrix<N, M>& other) const {
-    if (GetSize() != other.GetSize()) {
-      throw std::invalid_argument("Matrix size mismatch in operator-");
-    }
+    assert((GetSize() == other.GetSize()) &&
+           "Matrix size mismatch in operator-");
+
     Matrix<N, M> result(*this);
 
     for (LengthType i = 0; i < this->height_; ++i) {
@@ -126,9 +120,9 @@ public:
   }
   template <int K>
   Matrix<N, K> operator*(const Matrix<M, K>& other) const {
-    if (this->GetWidth() != other.GetHeight()) {
-      throw std::invalid_argument("Matrix size mismatch in operator*");
-    }
+    assert((this->GetWidth() == other.GetHeight()) &&
+           "Matrix size mismatch in operator*");
+
     Matrix<N, K> result;
 
     for (LengthType i = 0; i < result.GetHeight(); ++i) {
@@ -195,9 +189,8 @@ public:
 
   Matrix<N, M> Inv() {
     // Gaussian algorithm impl
-    if (this->GetHeight() != this->GetWidth() || this->GetHeight() == 0) {
-      throw std::runtime_error("Matrix shape mismath for inv op");
-    }
+    assert(this->GetHeight() == this->GetWidth() && this->GetHeight() > 0 &&
+           "Matrix shape mismath for inv op");
 
     Matrix<N, M> curr(*this);
     Matrix<N, M> result(this->GetHeight(), this->GetWidth());
@@ -244,10 +237,8 @@ public:
   }
 
   ElemType Det() {
-    if (this->GetHeight() != this->GetWidth() || this->GetHeight() == 0) {
-      throw std::runtime_error(
-          "\"Det\" op is defined only for square matrices");
-    }
+    assert(this->GetHeight() == this->GetWidth() && this->GetHeight() >= 0 &&
+           "\"Det\" op is defined only for square matrices");
 
     Matrix<N, M> curr(*this);
     ElemType result = 1;

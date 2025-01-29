@@ -29,9 +29,6 @@ Point3d Point3d::operator-() const {
 }
 
 Point3d Point3d::operator+(const Point3d& other) const {
-  if (matrix_.GetSize() != other.matrix_.GetSize()) {
-    throw std::runtime_error("Dimensions mismatch for operator+");
-  }
   Point3d result(*this);
   for (LengthType i = 0; i < other.GetSize(); ++i) {
     result.At(i) += other.At(i);
@@ -40,9 +37,6 @@ Point3d Point3d::operator+(const Point3d& other) const {
 }
 
 Point3d Point3d::operator-(const Point3d& other) const {
-  if (matrix_.GetSize() != other.matrix_.GetSize()) {
-    throw std::runtime_error("Dimensions mismatch for operator-");
-  }
   Point3d result(*this);
   for (LengthType i = 0; i < other.GetSize(); ++i) {
     result.At(i) -= other.At(i);
@@ -59,9 +53,6 @@ Point3d Point3d::operator*(const ElemType& num) const {
 }
 
 Point3d& Point3d::operator+=(const Point3d& other) {
-  if (matrix_.GetSize() != other.matrix_.GetSize()) {
-    throw std::runtime_error("Dimensions mismatch for operator+=");
-  }
   for (LengthType i = 0; i < other.GetSize(); ++i) {
     At(i) += other.At(i);
   }
@@ -69,9 +60,6 @@ Point3d& Point3d::operator+=(const Point3d& other) {
 }
 
 Point3d& Point3d::operator-=(const Point3d& other) {
-  if (matrix_.GetSize() != other.matrix_.GetSize()) {
-    throw std::runtime_error("Dimensions mismatch for operator-=");
-  }
   for (LengthType i = 0; i < other.GetSize(); ++i) {
     At(i) -= other.At(i);
   }
@@ -129,9 +117,6 @@ Point3d Point3d::Normalize() const {
 }
 
 Point3d::ElemType Point3d::DotProd(const Point3d& other) const {
-  if (GetSize() != other.GetSize()) {
-    throw std::runtime_error("Point3ds' dimensions mismatch for dot product");
-  }
   return X() * other.X() + Y() * other.Y() + Z() * other.Z();
 }
 

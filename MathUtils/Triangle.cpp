@@ -1,4 +1,6 @@
 #include "Triangle.h"
+#include <cassert>
+#include "Point3d.h"
 
 namespace Linear {
 
@@ -11,15 +13,19 @@ Triangle::Triangle() {
 Triangle::Triangle(const Triangle& other) : points_(other.points_) {}
 
 Triangle::Triangle(const Matrix<4, 3>& matrix) {
-  if (matrix.GetHeight() != 4 || matrix.GetWidth() != 3) {
-    throw std::invalid_argument(
-        "There's only matrices 4*3 for creating triangles");
-  }
   points_ = matrix;
 }
 
 Triangle::Triangle(const Point3d& a, const Point3d& b, const Point3d& c)
     : points_(0) {
+  {
+    Point3d ab = b - a;
+    Point3d ac = c - a;
+    Point3d collinear_check = ac.Cross(ab);
+    assert((collinear_check.At(0) != 0 || collinear_check.At(1) != 0 ||
+            collinear_check.At(2) != 0) &&
+           "To make triangle, his vertices must not lay on one straight line");
+  }
   for (LengthType i = 0; i < a.GetSize(); ++i) {
     points_.At(i, 0) = a.At(i);
     points_.At(i, 1) = b.At(i);
@@ -28,6 +34,7 @@ Triangle::Triangle(const Point3d& a, const Point3d& b, const Point3d& c)
 }
 
 Point3d Triangle::GetPoint(LengthType index) const {
+  assert((index < 3) && "Invalid index in Triangle's GetPoint method");
   Point3d result;
   for (LengthType i = 0; i < 3; ++i) {
     result.At(i) = points_.At(i, index);
