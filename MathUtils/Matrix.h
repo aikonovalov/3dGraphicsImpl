@@ -11,16 +11,14 @@
 
 namespace Linear {
 
-template <int N, int M>
+template <size_t Height, size_t Width>
 class Matrix {
 public:
   using LengthType = int;
   using ElemType = double;
   static constexpr const ElemType default_elem = 0;
 
-  Matrix(ElemType elem = default_elem) : height_(N), width_(M) {
-    assert(height_ >= 0 && width_ >= 0 &&
-           "Matrix dimensions must be non-negative");
+  Matrix(ElemType elem = default_elem) {
     for (LengthType i = 0; i < GetHeight(); ++i) {
       for (LengthType j = 0; j < GetWidth(); ++j) {
         At(i, j) = elem;
@@ -28,106 +26,79 @@ public:
     }
   }
 
-  Matrix(const std::vector<std::vector<ElemType>>& other)
-      : height_(N), width_(M) {
-    assert((other.size() == N && (other.size() > 0 && other[0].size() == M)) &&
+  Matrix(const std::vector<std::vector<ElemType>>& other) {
+    assert((other.size() == Height &&
+            (other.size() > 0 && other[0].size() == Width)) &&
            "Input dimensions do not match matrix size.");
-    for (LengthType i = 0; i < N; ++i) {
-      for (LengthType j = 0; j < M; ++j) {
+    for (LengthType i = 0; i < GetHeight(); ++i) {
+      for (LengthType j = 0; j < GetWidth(); ++j) {
         At(i, j) = other[i][j];
       }
     }
   }
 
-  Matrix(const Matrix<N, M>& other)
-      : height_(N), width_(M), matrix_(other.matrix_) {}
-  Matrix(Matrix&& other) noexcept
-      : height_(std::move(other.height_)),
-        width_(std::move(other.width_)),
-        matrix_(std::move(other.matrix_)) {}
-  Matrix& operator=(const Matrix& other) {
-    this->height_ = other.GetHeight();
-    this->width_ = other.GetWidth();
-    this->matrix_ = other.matrix_;
-    return *this;
-  }
-  Matrix& operator=(Matrix&& other) noexcept {
-    this->height_ = std::move(other.height_);
-    this->width_ = std::move(other.width_);
-    this->matrix_ = std::move(other.matrix_);
-    return *this;
-  }
-
-  ~Matrix() = default;
-
-  Matrix<N, M> Transpose() const {
-    Matrix<N, M> result;
-    for (LengthType i = 0; i < this->height_; ++i) {
-      for (LengthType j = 0; j < this->width_; ++j) {
+  Matrix<Width, Height> Transpose() const {
+    Matrix<Width, Height> result;
+    for (LengthType i = 0; i < GetHeight(); ++i) {
+      for (LengthType j = 0; j < GetWidth(); ++j) {
         result.At(j, i) = this->At(i, j);
       }
     }
     return result;
   }
-  Matrix& Transpose() {
+  Matrix& SelfTranspose() {
     *this = this->Transpose();
     return *this;
   }
 
-  LengthType GetHeight() { return this->height_; }
-  const LengthType& GetHeight() const { return this->height_; }
-  LengthType GetWidth() { return this->width_; }
-  const LengthType& GetWidth() const { return this->width_; }
+  LengthType GetHeight() const { return Height; }
+  const LengthType GetWidth() const { return Width; }
   std::pair<LengthType, LengthType> GetSize() const {
-    return std::make_pair(this->height_, this->width_);
+    return std::make_pair(GetHeight(), GetWidth());
   }
   ElemType& At(LengthType row, LengthType col) {
-    assert(row < this->height_ && col < this->width_ &&
+    assert(row < Height && col < Width &&
            "In Matrix's \"At\" method : arg' size mismatch");
-    return matrix_[row * this->width_ + col];
+    return matrix_[row * Width + col];
   }
   const ElemType& At(LengthType row, LengthType col) const {
-    assert(row < this->height_ && col < this->width_ &&
+    assert(row < Height && col < Width &&
            "In Matrix's \"At\" method : arg' size mismatch");
-    return matrix_[row * this->width_ + col];
+    return matrix_[row * Width + col];
   }
 
-  Matrix<N, M> operator+(const Matrix<N, M>& other) const {
+  Matrix<Height, Width> operator+(const Matrix<Height, Width>& other) const {
     assert((GetSize() == other.GetSize()) &&
            "Matrix size mismatch in operator+");
-    Matrix<N, M> result(*this);
+    Matrix<Height, Width> result(*this);
 
-    for (LengthType i = 0; i < this->height_; ++i) {
-      for (LengthType j = 0; j < this->width_; ++j) {
+    for (LengthType i = 0; i < GetHeight(); ++i) {
+      for (LengthType j = 0; j < GetWidth(); ++j) {
         result.At(i, j) += other.At(i, j);
       }
     }
 
     return result;
   }
-  Matrix<N, M> operator-(const Matrix<N, M>& other) const {
+  Matrix<Height, Width> operator-(const Matrix<Height, Width>& other) const {
     assert((GetSize() == other.GetSize()) &&
            "Matrix size mismatch in operator-");
 
-    Matrix<N, M> result(*this);
+    Matrix<Height, Width> result(*this);
 
-    for (LengthType i = 0; i < this->height_; ++i) {
-      for (LengthType j = 0; j < this->width_; ++j) {
+    for (LengthType i = 0; i < GetHeight(); ++i) {
+      for (LengthType j = 0; j < GetWidth(); ++j) {
         result.At(i, j) -= other.At(i, j);
       }
     }
     return result;
   }
-  template <int K>
-  Matrix<N, K> operator*(const Matrix<M, K>& other) const {
-    assert((this->GetWidth() == other.GetHeight()) &&
-           "Matrix size mismatch in operator*");
-
-    Matrix<N, K> result;
-
-    for (LengthType i = 0; i < result.GetHeight(); ++i) {
-      for (LengthType j = 0; j < result.GetWidth(); ++j) {
-        for (LengthType k = 0; k < this->width_; ++k) {
+  template <size_t K>
+  Matrix<Height, K> operator*(const Matrix<Width, K>& other) const {
+    Matrix<Height, K> result;
+    for (LengthType k = 0; k < GetWidth(); ++k) {
+      for (LengthType i = 0; i < result.GetHeight(); ++i) {
+        for (LengthType j = 0; j < result.GetWidth(); ++j) {
           result.At(i, j) += this->At(i, k) * other.At(k, j);
         }
       }
@@ -135,8 +106,8 @@ public:
     return result;
   }
 
-  Matrix<N, M> operator*(const ElemType num) const {
-    Matrix<N, M> result(*this);
+  Matrix<Height, Width> operator*(const ElemType num) const {
+    Matrix<Height, Width> result(*this);
 
     for (LengthType i = 0; i < result.GetHeight(); ++i) {
       for (LengthType j = 0; j < result.GetWidth(); ++j) {
@@ -146,24 +117,25 @@ public:
     return result;
   }
 
-  Matrix<N, M>& operator+=(const Matrix<N, M>& other) {
-    for (LengthType i = 0; i < this->height_; ++i) {
-      for (LengthType j = 0; j < this->width_; ++j) {
+  Matrix<Height, Width>& operator+=(const Matrix<Height, Width>& other) {
+    for (LengthType i = 0; i < GetHeight(); ++i) {
+      for (LengthType j = 0; j < GetWidth(); ++j) {
         this->At(i, j) += other.At(i, j);
       }
     }
     return *this;
   }
-  Matrix<N, M>& operator-=(const Matrix<N, M>& other) {
-    for (LengthType i = 0; i < this->height_; ++i) {
-      for (LengthType j = 0; j < this->width_; ++j) {
+  Matrix<Height, Width>& operator-=(const Matrix<Height, Width>& other) {
+    for (LengthType i = 0; i < GetHeight(); ++i) {
+      for (LengthType j = 0; j < GetWidth(); ++j) {
         this->At(i, j) -= other.At(i, j);
       }
     }
     return *this;
   }
-  template <int K>
-  Matrix<N, K>& operator*=(const Matrix<M, K>& other) {
+
+  template <size_t K>
+  Matrix<Height, K>& operator*=(const Matrix<Width, K>& other) {
     *this = *this * other;
     return *this;
   }
@@ -187,13 +159,13 @@ public:
     }
   }
 
-  Matrix<N, M> Inv() {
+  Matrix<Height, Height> Inv() {
     // Gaussian algorithm impl
     assert(this->GetHeight() == this->GetWidth() && this->GetHeight() > 0 &&
            "Matrix shape mismath for inv op");
 
-    Matrix<N, M> curr(*this);
-    Matrix<N, M> result(this->GetHeight(), this->GetWidth());
+    Matrix<Height, Height> curr(*this);
+    Matrix<Height, Width> result(this->GetHeight(), this->GetWidth());
     for (LengthType col = 0; col < result.GetWidth(); ++col) {
       result.At(col, col) = 1;
     }
@@ -240,7 +212,7 @@ public:
     assert(this->GetHeight() == this->GetWidth() && this->GetHeight() >= 0 &&
            "\"Det\" op is defined only for square matrices");
 
-    Matrix<N, M> curr(*this);
+    Matrix<Height, Width> curr(*this);
     ElemType result = 1;
 
     for (LengthType col = 0; col < curr.GetWidth(); ++col) {
@@ -281,17 +253,16 @@ public:
     return result;
   }
 
-  static Matrix<N, N> Eye() {
-    Matrix<N, N> result{};
+  static Matrix<Height, Height> Eye() {
+    Matrix<Height, Height> result{};
     for (LengthType i = 0; i < result.GetHeight(); ++i) {
       result.At(i, i) = 1.0;
     }
     return result;
   }
 
-  template <int Length>
-  static Matrix<Length, Length> Diag(const std::vector<ElemType>& list) {
-    Matrix<Length, Length> result(list.size(), list.size());
+  static Matrix<Height, Height> Diag(const std::vector<ElemType>& list) {
+    Matrix<Height, Height> result(list.size(), list.size());
     for (LengthType i = 0; i < list.size(); ++i) {
       result.At(i, i) = list[i];
     }
@@ -355,9 +326,7 @@ protected:
     return result;
   }
 
-  LengthType height_;
-  LengthType width_;
-  std::array<ElemType, N * M> matrix_;
+  std::array<ElemType, Height * Width> matrix_;
 };
 
 }  // namespace Linear
