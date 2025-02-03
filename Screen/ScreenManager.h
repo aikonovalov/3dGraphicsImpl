@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QApplication>
+#include <QLabel>
 #include <QMainWindow>
+#include <QPixmap>
 #include <string>
 #include <utility>
 
