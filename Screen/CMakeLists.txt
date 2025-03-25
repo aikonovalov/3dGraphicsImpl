@@ -1,12 +1,14 @@
-add_library(ScreenHeaders INTERFACE)
-target_include_directories(ScreenHeaders INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-
-add_library(Screen
+target_sources(ThreeDEngine PRIVATE
     ScreenManager.cpp
 )
 
-target_link_libraries(Screen PRIVATE ScreenHeaders)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
-target_include_directories(Screen PRIVATE ${Qt6Widgets_INCLUDE_DIRS})
+# find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
 
-target_link_libraries(Screen PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+# target_link_libraries(Screen
+#         Qt6::Core 
+#         Qt6::Widgets
+#         Qt6::Gui
+# )
