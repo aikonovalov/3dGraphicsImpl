@@ -1,9 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <initializer_list>
+#include <iostream>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -11,322 +14,287 @@
 
 namespace Linear {
 
-template <size_t Height, size_t Width>
+namespace Detail {
+enum Height : int;
+enum Width : int;
+
+constexpr Height heightFromWidth(Width elem) {
+  return static_cast<Height>(elem);
+}
+
+constexpr Width widthFromHeight(Height elem) {
+  return static_cast<Width>(elem);
+}
+
+}  // namespace Detail
+
+template <Detail::Height height, Detail::Width width>
 class Matrix {
+  static_assert(height > 0 && width > 0,
+                "Matrix dimensions must be greater than zero");
+
+  using Height = Detail::Height;
+  using Width = Detail::Width;
+
 public:
-  using LengthType = int;
+  using Index = int;
   using ElemType = double;
-  static constexpr const ElemType default_elem = 0;
 
-  Matrix(ElemType elem = default_elem) {
-    for (LengthType i = 0; i < GetHeight(); ++i) {
-      for (LengthType j = 0; j < GetWidth(); ++j) {
-        At(i, j) = elem;
-      }
+  static constexpr std::underlying_type_t<Height> GetHeight() {
+    return height;
+  }
+  static constexpr std::underlying_type_t<Width> GetWidth() {
+    return width;
+  }
+
+  Matrix(ElemType elem = default_elem)
+      : elements_(FillMatrix<GetHeight() * GetWidth()>(elem)) {
+  }
+
+  template <typename... Args>
+  Matrix(Args... args) {
+    static_assert(GetHeight() * GetWidth() == sizeof...(args),
+                  "Wrong arguments count");
+    Index index = 0;
+    (((*this)(index / GetWidth(), index % GetWidth()) = args, ++index), ...);
+  }
+
+  Matrix(std::initializer_list<ElemType> list) {
+    assert(list.size() == GetHeight() * GetWidth() && "Argument size mismatch");
+    auto it = list.begin();
+    for (Index i = 0; i < GetHeight() * GetWidth(); ++i, ++it) {
+      elements_[i] = *it;
     }
   }
 
-  Matrix(const std::vector<std::vector<ElemType>>& other) {
-    assert((other.size() == Height &&
-            (other.size() > 0 && other[0].size() == Width)) &&
-           "Input dimensions do not match matrix size.");
-    for (LengthType i = 0; i < GetHeight(); ++i) {
-      for (LengthType j = 0; j < GetWidth(); ++j) {
-        At(i, j) = other[i][j];
-      }
-    }
-  }
-
-  Matrix<Width, Height> Transpose() const {
-    Matrix<Width, Height> result;
-    for (LengthType i = 0; i < GetHeight(); ++i) {
-      for (LengthType j = 0; j < GetWidth(); ++j) {
-        result.At(j, i) = this->At(i, j);
+  Matrix<Detail::heightFromWidth(width), Detail::widthFromHeight(height)>
+  Transpose() const {
+    Matrix<Detail::heightFromWidth(width), Detail::widthFromHeight(height)>
+        result;
+    for (Index i = 0; i < GetHeight(); ++i) {
+      for (Index j = 0; j < GetWidth(); ++j) {
+        result(j, i) = (*this)(i, j);
       }
     }
     return result;
   }
-  Matrix& SelfTranspose() {
-    *this = this->Transpose();
+
+  Matrix& SelfTranspose()
+    requires(GetWidth() == GetHeight())
+  {
+    for (Index i = 0; i < GetHeight(); ++i) {
+      for (Index j = i + 1; j < GetWidth(); ++j) {
+        std::swap((*this)(i, j), (*this)(j, i));
+      }
+    }
+
     return *this;
   }
 
-  LengthType GetHeight() const { return Height; }
-  const LengthType GetWidth() const { return Width; }
-  std::pair<LengthType, LengthType> GetSize() const {
-    return std::make_pair(GetHeight(), GetWidth());
-  }
-  ElemType& At(LengthType row, LengthType col) {
-    assert(row < Height && col < Width &&
+  ElemType& operator()(ElemType row, ElemType column) {
+    assert(row < height && column < width &&
            "In Matrix's \"At\" method : arg' size mismatch");
-    return matrix_[row * Width + col];
+    return elements_[row * width + column];
   }
-  const ElemType& At(LengthType row, LengthType col) const {
-    assert(row < Height && col < Width &&
+  const ElemType& operator()(ElemType row, ElemType column) const {
+    assert(row < height && column < width &&
            "In Matrix's \"At\" method : arg' size mismatch");
-    return matrix_[row * Width + col];
+    return elements_[row * width + column];
   }
 
-  Matrix<Height, Width> operator+(const Matrix<Height, Width>& other) const {
-    assert((GetSize() == other.GetSize()) &&
-           "Matrix size mismatch in operator+");
-    Matrix<Height, Width> result(*this);
+  ElemType& operator()(ElemType index)
+    requires(GetWidth() == 1)
+  {
+    assert(index < height * width &&
+           "In Matrix's \"At\" method : arg' size mismatch");
+    return elements_[index];
+  }
+  const ElemType& operator()(ElemType index) const
+    requires(GetWidth() == 1)
+  {
+    assert(index < height * width &&
+           "In Matrix's \"At\" method : arg' size mismatch");
+    return elements_[index];
+  }
 
-    for (LengthType i = 0; i < GetHeight(); ++i) {
-      for (LengthType j = 0; j < GetWidth(); ++j) {
-        result.At(i, j) += other.At(i, j);
-      }
+  Matrix operator+(const Matrix& other) const {
+    Matrix result(*this);
+
+    for (Index i = 0; i < GetHeight() * GetWidth(); ++i) {
+      result.elements_[i] += other.elements_[i];
     }
 
     return result;
   }
-  Matrix<Height, Width> operator-(const Matrix<Height, Width>& other) const {
-    assert((GetSize() == other.GetSize()) &&
-           "Matrix size mismatch in operator-");
+  Matrix operator-(const Matrix& other) const {
+    Matrix result(*this);
 
-    Matrix<Height, Width> result(*this);
-
-    for (LengthType i = 0; i < GetHeight(); ++i) {
-      for (LengthType j = 0; j < GetWidth(); ++j) {
-        result.At(i, j) -= other.At(i, j);
-      }
+    for (Index i = 0; i < GetHeight() * GetWidth(); ++i) {
+      result.elements_[i] -= other.elements_[i];
     }
     return result;
   }
-  template <size_t K>
-  Matrix<Height, K> operator*(const Matrix<Width, K>& other) const {
-    Matrix<Height, K> result;
-    for (LengthType k = 0; k < GetWidth(); ++k) {
-      for (LengthType i = 0; i < result.GetHeight(); ++i) {
-        for (LengthType j = 0; j < result.GetWidth(); ++j) {
-          result.At(i, j) += this->At(i, k) * other.At(k, j);
+
+  template <Width otherWidth>
+  Matrix<height, otherWidth> operator*(
+      const Matrix<Detail::heightFromWidth(width), otherWidth>& other) const {
+    Matrix<height, otherWidth> result;
+    for (Index k = 0; k < GetWidth(); ++k) {
+      for (Index i = 0; i < GetHeight(); ++i) {
+        for (Index j = 0; j < result.GetWidth(); ++j) {
+          result(i, j) += (*this)(i, k) * other(k, j);
         }
       }
     }
     return result;
   }
 
-  Matrix<Height, Width> operator*(const ElemType num) const {
-    Matrix<Height, Width> result(*this);
-
-    for (LengthType i = 0; i < result.GetHeight(); ++i) {
-      for (LengthType j = 0; j < result.GetWidth(); ++j) {
-        result.At(i, j) *= num;
-      }
-    }
-    return result;
-  }
-
-  Matrix<Height, Width>& operator+=(const Matrix<Height, Width>& other) {
-    for (LengthType i = 0; i < GetHeight(); ++i) {
-      for (LengthType j = 0; j < GetWidth(); ++j) {
-        this->At(i, j) += other.At(i, j);
-      }
-    }
-    return *this;
-  }
-  Matrix<Height, Width>& operator-=(const Matrix<Height, Width>& other) {
-    for (LengthType i = 0; i < GetHeight(); ++i) {
-      for (LengthType j = 0; j < GetWidth(); ++j) {
-        this->At(i, j) -= other.At(i, j);
-      }
+  Matrix& operator*=(const ElemType num) {
+    for (Index i = 0; i < GetHeight() * GetWidth(); ++i) {
+      elements_[i] *= num;
     }
     return *this;
   }
 
-  template <size_t K>
-  Matrix<Height, K>& operator*=(const Matrix<Width, K>& other) {
-    *this = *this * other;
+  Matrix operator*(const ElemType num) const {
+    Matrix result(*this);
+    result *= num;
+    return result;
+  }
+
+  friend Matrix operator*(const ElemType num, const Matrix& matrix) {
+    return matrix * num;
+  }
+
+  Matrix& operator+=(const Matrix& other) {
+    for (Index i = 0; i < GetHeight() * GetWidth(); ++i) {
+      elements_[i] += other.elements_[i];
+    }
+    return *this;
+  }
+  Matrix& operator-=(const Matrix& other) {
+    for (Index i = 0; i < GetHeight() * GetWidth(); ++i) {
+      elements_[i] -= other.elements_[i];
+    }
     return *this;
   }
 
-  void FirstTypeTransform(LengthType row_from, LengthType row_to,
-                          ElemType lambda) {
-    for (LengthType i = 0; i < this->GetWidth(); ++i) {
-      this->At(row_to, i) += this->At(row_from, i) * lambda;
+  Matrix& operator*=(
+      const Matrix<Detail::heightFromWidth(width), width>& other) {
+    Matrix tmp{*this};
+
+    for (Index i = 0; i < GetHeight() * GetWidth(); ++i) {
+      elements_[i] = 0;
+    }
+
+    for (Index k = 0; k < GetWidth(); ++k) {
+      for (Index i = 0; i < GetHeight(); ++i) {
+        for (Index j = 0; j < GetWidth(); ++j) {
+          (*this)(i, j) += tmp(i, k) * other(k, j);
+        }
+      }
+    }
+
+    return *this;
+  }
+
+  bool operator==(const Matrix& other) const {
+    for (Index i = 0; i < GetHeight() * GetWidth(); ++i) {
+      if (elements_[i] != other.elements_[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool operator!=(const Matrix& other) const {
+    return !(*this == other);
+  }
+
+  enum From : Index;
+  enum To : Index;
+  void AddToRow(From from, To to, ElemType lambda) {
+    for (Index i = 0; i < GetWidth(); ++i) {
+      (*this)(to, i) += (*this)(from, i) * lambda;
     }
   }
 
-  void SecondTypeTransform(LengthType row_from, LengthType row_to) {
-    for (LengthType i = 0; i < this->GetWidth(); ++i) {
-      std::swap(this->At(row_to, i), this->At(row_from, i));
+  void SwapRows(From from, To to) {
+    for (Index i = 0; i < GetWidth(); ++i) {
+      std::swap((*this)(to, i), (*this)(from, i));
     }
   }
 
-  void ThirdTypeTransform(LengthType row, ElemType lambda) {
-    for (LengthType i = 0; i < this->GetWidth(); ++i) {
-      this->At(row, i) *= lambda;
+  void MultiplyRow(Index row, ElemType lambda) {
+    for (Index i = 0; i < GetWidth(); ++i) {
+      (*this)(row, i) *= lambda;
     }
   }
 
-  Matrix<Height, Height> Inv() {
-    // Gaussian algorithm impl
-    assert(this->GetHeight() == this->GetWidth() && this->GetHeight() > 0 &&
-           "Matrix shape mismath for inv op");
-
-    Matrix<Height, Height> curr(*this);
-    Matrix<Height, Width> result(this->GetHeight(), this->GetWidth());
-    for (LengthType col = 0; col < result.GetWidth(); ++col) {
-      result.At(col, col) = 1;
-    }
-
-    for (LengthType col = 0; col < curr.GetWidth(); ++col) {
-      if (curr.At(col, col) == 0) {
-        bool correct = false;
-        for (LengthType row = col + 1; row < curr.GetHeight(); ++row) {
-          if (curr.At(row, col) != 0) {
-            curr.SecondTypeTransform(row, col);
-            result.SecondTypeTransform(row, col);
-            correct = true;
-            break;
-          }
-        }
-        if (!correct) {
-          throw std::runtime_error("Matrix doesn't have inverse");
-        }
-      }
-
-      if (curr.At(col, col) != 1) {
-        ElemType lambda = 1.0 / curr.At(col, col);
-        curr.ThirdTypeTransform(col, lambda);
-        result.ThirdTypeTransform(col, lambda);
-      }
-
-      for (LengthType row = 0; row < curr.GetHeight(); ++row) {
-        if (row == col) {
-          continue;
-        }
-
-        if (curr.At(row, col) != 0) {
-          ElemType lambda = -curr.At(row, col);
-          curr.FirstTypeTransform(col, row, lambda);
-          result.FirstTypeTransform(col, row, lambda);
-        }
-      }
-    }
-
-    return result;
-  }
-
-  ElemType Det() {
-    assert(this->GetHeight() == this->GetWidth() && this->GetHeight() >= 0 &&
-           "\"Det\" op is defined only for square matrices");
-
-    Matrix<Height, Width> curr(*this);
-    ElemType result = 1;
-
-    for (LengthType col = 0; col < curr.GetWidth(); ++col) {
-      if (curr.At(col, col) == 0) {
-        bool correct = false;
-        for (LengthType row = col + 1; row < curr.GetHeight(); ++row) {
-          if (curr.At(row, col) != 0) {
-            curr.SecondTypeTransform(row, col);
-            result *= -1;
-            correct = true;
-            break;
-          }
-        }
-        if (!correct) {
-          result *= 0;
-          return result;
-        }
-      }
-
-      if (curr.At(col, col) != 1) {
-        ElemType lambda = 1.0 / curr.At(col, col);
-        curr.ThirdTypeTransform(col, lambda);
-        result /= lambda;
-      }
-
-      for (LengthType row = 0; row < curr.GetHeight(); ++row) {
-        if (row == col) {
-          continue;
-        }
-
-        if (curr.At(row, col) != 0) {
-          ElemType lambda = -curr.At(row, col);
-          curr.FirstTypeTransform(col, row, lambda);
-        }
-      }
-    }
-
-    return result;
-  }
-
-  static Matrix<Height, Height> Eye() {
-    Matrix<Height, Height> result{};
-    for (LengthType i = 0; i < result.GetHeight(); ++i) {
-      result.At(i, i) = 1.0;
+  static Matrix Eye()
+    requires(GetHeight() == GetWidth())
+  {
+    Matrix result{};
+    for (Index i = 0; i < result.GetHeight(); ++i) {
+      result(i, i) = 1.0;
     }
     return result;
   }
 
-  static Matrix<Height, Height> Diag(const std::vector<ElemType>& list) {
-    Matrix<Height, Height> result(list.size(), list.size());
-    for (LengthType i = 0; i < list.size(); ++i) {
-      result.At(i, i) = list[i];
-    }
+  template <typename... Args>
+  static Matrix Diagonal(Args... list)
+    requires(GetHeight() == GetWidth())
+  {
+    static_assert(height == sizeof...(list));
+    Matrix result{};
+
+    Index index = 0;
+    ((result(index, index) = list, ++index), ...);
     return result;
   }
 
-  template <typename T1, typename T2, typename T3, typename T4>
-  static Matrix<4, 1> MakeVector(T1 x, T2 y, T3 z, T4 v) {
-    Matrix<4, 1> result{};
-    result.At(0, 0) = x;
-    result.At(1, 0) = y;
-    result.At(2, 0) = z;
-    result.At(3, 0) = v;
+  template <typename... Args>
+  static Matrix MakeVector(Args... list)
+    requires(GetWidth() == 1)
+  {
+    static_assert(height == sizeof...(list));
+    Matrix result{};
+
+    Index index = 0;
+    ((result(index, 0) = list, ++index), ...);
     return result;
   }
 
-  static Matrix<4, 4> MakeRotationMatrix(ElemType angle_x = 0,
-                                         ElemType angle_y = 0,
-                                         ElemType angle_z = 0) {
-    return RotateX(angle_x) * RotateY(angle_y) * RotateZ(angle_z);
+  static Matrix<Height{4}, Width{4}> MakeRotation(
+      const std::array<ElemType, 4>& axis, ElemType angle)
+    requires(GetHeight() == 4 && GetWidth() == 4)
+  {
+    Matrix result = Matrix::Eye();
+    ElemType cosinus = std::cos(angle);
+    ElemType sinus = std::sin(angle);
+    result(0, 0) = cosinus + axis[0] * axis[0] * (1 - cosinus);
+    result(0, 1) = axis[0] * axis[1] * (1 - cosinus) - axis[2] * sinus;
+    result(0, 2) = axis[0] * axis[2] * (1 - cosinus) + axis[1] * sinus;
+    result(1, 0) = result(0, 1) + 2 * axis[2] * sinus;
+    result(1, 1) = cosinus + axis[1] * axis[1] * (1 - cosinus);
+    result(1, 2) = axis[1] * axis[2] * (1 - cosinus) - axis[0] * sinus;
+    result(2, 0) = result(0, 2) - 2 * axis[1] * sinus;
+    result(2, 1) = result(1, 2) + 2 * axis[0] * sinus;
+    result(2, 2) = cosinus + axis[2] * axis[2] * (1 - cosinus);
+
+    return result;
   }
 
 protected:
-  static Matrix<4, 4> RotateX(ElemType angle) {
-    Matrix<4, 4> result{};
-
-    result.At(result.GetHeight() - 1, result.GetWidth() - 1) = 1;
-    result.At(0, 0) = 1;
-
-    result.At(1, 1) = cos(angle);
-    result.At(1, 2) = -sin(angle);
-    result.At(2, 1) = -result.At(1, 2);
-    result.At(2, 2) = result.At(1, 1);
-
-    return result;
-  }
-  static Matrix<4, 4> RotateY(ElemType angle) {
-    Matrix<4, 4> result{};
-
-    result.At(result.GetHeight() - 1, result.GetWidth() - 1) = 1;
-    result.At(1, 1) = 1;
-
-    result.At(0, 0) = cos(angle);
-    result.At(0, 2) = sin(angle);
-    result.At(2, 0) = -result.At(0, 2);
-    result.At(2, 2) = result.At(0, 0);
-
-    return result;
-  }
-  static Matrix<4, 4> RotateZ(ElemType angle) {
-    Matrix<4, 4> result{};
-
-    result.At(result.GetHeight() - 1, result.GetWidth() - 1) = 1;
-    result.At(2, 2) = 1;
-
-    result.At(0, 0) = cos(angle);
-    result.At(0, 1) = -sin(angle);
-    result.At(1, 0) = -result.At(0, 1);
-    result.At(1, 1) = result.At(0, 0);
-
-    return result;
+  template <int Length>
+  static constexpr std::array<ElemType, Length> FillMatrix(ElemType elem) {
+    std::array<ElemType, Length> matrix;
+    matrix.fill(elem);
+    return matrix;
   }
 
-  std::array<ElemType, Height * Width> matrix_;
+  static constexpr const ElemType default_elem = 0;
+  std::array<ElemType, height * width> elements_;
 };
 
 }  // namespace Linear
