@@ -27,6 +27,8 @@ constexpr Width widthFromHeight(Height elem) {
 }
 
 }  // namespace Detail
+using ElemType = double;
+using Index = int;
 
 template <Detail::Height height, Detail::Width width>
 class Matrix {
@@ -37,8 +39,8 @@ class Matrix {
   using Width = Detail::Width;
 
 public:
-  using Index = int;
-  using ElemType = double;
+  using Index = Linear::Index;
+  using ElemType = Linear::ElemType;
 
   static constexpr std::underlying_type_t<Height> GetHeight() {
     return height;
@@ -209,6 +211,24 @@ public:
 
   bool operator!=(const Matrix& other) const {
     return !(*this == other);
+  }
+
+  Matrix<Height{1}, width> GetRow(Index index) const {
+    Matrix<Height{1}, width> row;
+    for (Index i = 0; i < GetWidth(); ++i) {
+      row(0, i) = (*this)(index, i);
+    }
+
+    return row;
+  }
+
+  Matrix<height, Width{1}> GetColumn(Index index) const {
+    Matrix<height, Width{1}> col;
+    for (Index i = 0; i < GetHeight(); ++i) {
+      col(i) = (*this)(i, index);
+    }
+
+    return col;
   }
 
   enum From : Index;

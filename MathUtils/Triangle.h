@@ -1,31 +1,32 @@
 #pragma once
 
+#include <array>
 #include <stdexcept>
-#include "Point3d.h"
+#include "Matrix.h"
+#include "Point4.h"
 
 namespace Linear {
 
 class Triangle {
-  using ElemType = Matrix<4, 3>::ElemType;
-  using LengthType = Matrix<4, 3>::LengthType;
-
 public:
-  Triangle();
+  Triangle(const Point4&, const Point4&, const Point4&);
+  Triangle(const Matrix<Detail::Height{4}, Detail::Width{3}>&);
 
-  Triangle(const Triangle&);
+  Point4 GetPoint(Index) const;
 
-  Triangle(const Matrix<4, 3>&);
+  Point4 GetNormal() const;
 
-  Triangle(const Point3d&, const Point3d&, const Point3d&);
-
-  Point3d GetPoint(LengthType) const;
-
-  Point3d Normal() const;
-
-  void Transform(const Matrix<4, 4>&);
+  void Transform(const TransformMatrix4x4&);
 
 private:
-  Matrix<4, 3> points_;
+  bool CollinearCheck(const Point4& point1, const Point4& point2,
+                      const Point4& point3) const {
+    Vector4 edge1 = point2 - point1;
+    Vector4 edge2 = point3 - point1;
+    return IsEmpty(CrossProduct(edge1, edge2));
+  }
+
+  std::array<Point4, 3> points_;
 };
 
 }  // namespace Linear

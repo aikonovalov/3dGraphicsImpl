@@ -1,58 +1,39 @@
 #include "Triangle.h"
 #include <cassert>
-#include "Point3d.h"
+#include "Matrix.h"
+#include "Point4.h"
 
 namespace Linear {
 
-Triangle::Triangle() {
-  for (LengthType i = 0; i < 3; ++i) {
-    points_.At(3, i) = 1;
+Triangle::Triangle(const Matrix<Detail::Height{4}, Detail::Width{3}>& matrix)
+    : points_({matrix.GetColumn(0), matrix.GetColumn(1), matrix.GetColumn(2)}) {
+  assert(CollinearCheck(points_[0], points_[1], points_[2]) &&
+         "To make triangle, his vertices must not lay on one straight line");
+}
+
+Triangle::Triangle(const Point4& a, const Point4& b, const Point4& c)
+    : points_({a, b, c}) {
+  assert(CollinearCheck(a, b, c) &&
+         "To make triangle, his vertices must not lay on one straight line");
+}
+
+Point4 Triangle::GetPoint(Index index) const {
+  assert(index > 0 && index < 3 && "Index must be an integer from 0 to 2");
+  return points_[index];
+}
+
+Point4 Triangle::GetNormal() const {
+  Point4 vec1 = GetPoint(1) - GetPoint(0);
+  Point4 vec2 = GetPoint(2) - GetPoint(0);
+
+  Point4 n = CrossProduct(vec1, vec2);
+  return Normalize(n);
+}
+
+void Triangle::Transform(const TransformMatrix4x4& transform_matrix) {
+  for (auto& point : points_) {
+    point = transform_matrix * point;
   }
-}
-
-Triangle::Triangle(const Triangle& other) : points_(other.points_) {}
-
-Triangle::Triangle(const Matrix<4, 3>& matrix) {
-  points_ = matrix;
-}
-
-Triangle::Triangle(const Point3d& a, const Point3d& b, const Point3d& c)
-    : points_(0) {
-  {
-    Point3d ab = b - a;
-    Point3d ac = c - a;
-    Point3d collinear_check = ac.Cross(ab);
-    assert((collinear_check.At(0) != 0 || collinear_check.At(1) != 0 ||
-            collinear_check.At(2) != 0) &&
-           "To make triangle, his vertices must not lay on one straight line");
-  }
-  for (LengthType i = 0; i < a.GetSize(); ++i) {
-    points_.At(i, 0) = a.At(i);
-    points_.At(i, 1) = b.At(i);
-    points_.At(i, 2) = c.At(i);
-  }
-}
-
-Point3d Triangle::GetPoint(LengthType index) const {
-  assert((index < 3) && "Invalid index in Triangle's GetPoint method");
-  Point3d result;
-  for (LengthType i = 0; i < 3; ++i) {
-    result.At(i) = points_.At(i, index);
-  }
-  return result;
-}
-
-Point3d Triangle::Normal() const {
-
-  Point3d vec1 = GetPoint(1) - GetPoint(0);
-  Point3d vec2 = GetPoint(2) - GetPoint(0);
-
-  Point3d n = vec1.Cross(vec2);
-  return n.Normalize();
-}
-
-void Triangle::Transform(const Matrix<4, 4>& matrix) {
-  points_ = matrix * points_;
 }
 
 }  // namespace Linear
