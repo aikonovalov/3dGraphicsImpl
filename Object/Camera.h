@@ -1,67 +1,88 @@
 #pragma once
 
+#include <array>
 #include <cmath>
 #include "../MathUtils/Plane.h"
 
 namespace Scene {
 
-struct Camera {
-  using ElemType = Linear::Plane::ElemType;
+struct FrustumPlanes {
+  Linear::Plane near;
+  Linear::Plane far;
+  Linear::Plane up;
+  Linear::Plane down;
+  Linear::Plane left;
+  Linear::Plane right;
+};
+
+struct CameraAxes {
+  Linear::Vector4 forward;
+  Linear::Vector4 right;
+  Linear::Vector4 up;
+};
+
+class Camera {
+  using ElemType = Linear::ElemType;
+  using Point4 = Linear::Point4;
+  using Vector4 = Linear::Vector4;
+  using Plane = Linear::Plane;
+  using TransformMatrix4x4 = Linear::TransformMatrix4x4;
 
 public:
-  class ParametersHandler {
-  public:
-    ParametersHandler();
-    ParametersHandler(ElemType, ElemType, ElemType, ElemType, ElemType);
+  explicit Camera(const Point4& position, const ElemType aspect_ratio,
+                  const ElemType near_distance, const ElemType far_distance,
+                  const ElemType fov, const ElemType pitch, const ElemType yaw);
 
-    void SetFov(ElemType);
-    void SetAspect(ElemType);
-    void SetNearDistance(ElemType);
-    void SetFarDistance(ElemType);
+  TransformMatrix4x4 GetAlignedFrustumMatrix() const;
 
-    void BuildPlanes();
+  TransformMatrix4x4 GetViewDirectionMatrix() const;
 
-    void ConstructTransformMatrix(Linear::Matrix<4, 4>&);
+  CameraAxes GetCameraAxes() const;
 
-  private:
-    ElemType fov;
-    ElemType aspect_ratio;  // TODO: Connect with QT
-    ElemType near_distance;
-    ElemType far_distance;
-    ElemType hfov_sinus;
-    ElemType hfov_cosinus;
-    ElemType hfov_tangens;
-    ElemType focal_length;
+  TransformMatrix4x4 GetFullFrustumMatrix() const;
 
-    Linear::Plane near;
-    Linear::Plane far;
-    Linear::Plane top;
-    Linear::Plane bottom;
-    Linear::Plane left;
-    Linear::Plane right;
-  };
+  const FrustumPlanes GetFrustumPlanes() const;
 
-  Camera();
+  Point4 GetPosition() const;
+  void SetPosition(const Point4& new_position);
 
-  Camera(ElemType, ElemType, ElemType);
+  ElemType GetAspectRatio() const;
+  void SetAspectRatio(ElemType new_focal_length);
 
-  // Rotate camera along 3 axis
-  void Rotate(ElemType, ElemType, ElemType);
+  ElemType GetNearDistance() const;
+  void SetNearDistance(ElemType new_near_distance);
 
-  void ResetRotate();
+  ElemType GetFarDistance() const;
+  void SetFarDistance(ElemType new_far_distance);
 
-  const Linear::Matrix<4, 4>& GetTransformMatrix() const;
+  ElemType GetFOV() const;
+  void SetFOV(ElemType new_fov);
 
-  const Linear::Matrix<4, 4>& GetRotateMatrix() const;
+  ElemType GetPitch() const;
+  void SetPitch(ElemType new_pitch);
 
-  Linear::Triangle Transform(Linear::Triangle&);
+  ElemType GetYAW() const;
+  void SetYAW(ElemType new_yaw);
 
 private:
-  void ConstructTransformMatrix();
+  void UpdateDirection();
 
-  Linear::Matrix<4, 4> transform_matrix_;
-  Linear::Matrix<4, 4> rotation_matrix_;
-  ParametersHandler handler_;
+  static const Point4 kDEFAULT_POSITION;
+  static const Vector4 kWORLD_UP_VEC;
+  static const ElemType kDEFAULT_FOCAL_LENGTH;
+
+  static const ElemType kDEFAULT_FOV;
+  static const ElemType kDEFAULT_PITCH;
+  static const ElemType kDEFAULT_YAW;
+
+  Point4 position_;
+  ElemType aspect_ratio_;
+  ElemType near_distance_;
+  ElemType far_distance_;
+
+  ElemType fov_;
+  ElemType pitch_;
+  ElemType yaw_;
 };
 
 }  // namespace Scene
