@@ -9,6 +9,7 @@ namespace Linear {
 
 class Triangle {
 public:
+  Triangle();
   Triangle(const Point4&, const Point4&, const Point4&);
   Triangle(const Matrix<Detail::Height{4}, Detail::Width{3}>&);
 
@@ -18,7 +19,7 @@ public:
 
   Point4 GetNormal() const;
 
-  Point4 GetPointByBarycentric(const Point4& barycentric_point);
+  Point4 GetPointByBarycentric(const Point4& barycentric_point) const;
 
   ElemType GetAreaXYProjection() const;
 

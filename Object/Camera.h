@@ -29,11 +29,15 @@ class Camera {
   using TransformMatrix4x4 = Linear::TransformMatrix4x4;
 
 public:
-  Camera() = default;
+  explicit Camera(const Point4& position = kDEFAULT_POSITION,
+                  const ElemType aspect_ratio = kDEFAULT_ASPECT_RATIO,
+                  const ElemType near_distance = kDEFAULT_NEAR_DISTANCE,
+                  const ElemType far_distance = kDEFAULT_FAR_DISTANCE,
+                  const ElemType fov = kDEFAULT_FOV,
+                  const ElemType pitch = kDEFAULT_PITCH,
+                  const ElemType yaw = kDEFAULT_YAW);
 
-  explicit Camera(const Point4& position, const ElemType aspect_ratio,
-                  const ElemType near_distance, const ElemType far_distance,
-                  const ElemType fov, const ElemType pitch, const ElemType yaw);
+  void LookAtPoint(const Point4& view_point);
 
   TransformMatrix4x4 GetAlignedFrustumMatrix() const;
 
@@ -71,23 +75,23 @@ private:
 
   static inline const Point4 kDEFAULT_POSITION = {0, 0, 0, 1};
   static inline const Vector4 kWORLD_UP_VEC = {0, 0, 1, 0};
-  ;
+
   static inline const ElemType kDEFAULT_ASPECT_RATIO = 1;
   static inline const ElemType kDEFAULT_NEAR_DISTANCE = 0.1;
-  static inline const ElemType kDEFAULT_FAR_DISTANCE = 1000.0;
+  static inline const ElemType kDEFAULT_FAR_DISTANCE = 10000.0;
 
   static inline const ElemType kDEFAULT_FOV = M_PI / 2.0;
   static inline const ElemType kDEFAULT_PITCH = 0;
   static inline const ElemType kDEFAULT_YAW = 0;
 
-  Point4 position_ = kDEFAULT_POSITION;
-  ElemType aspect_ratio_ = kDEFAULT_ASPECT_RATIO;
-  ElemType near_distance_ = kDEFAULT_NEAR_DISTANCE;
-  ElemType far_distance_ = kDEFAULT_FAR_DISTANCE;
+  Point4 position_;
+  ElemType aspect_ratio_;
+  ElemType near_distance_;
+  ElemType far_distance_;
 
-  ElemType fov_ = kDEFAULT_FOV;
-  ElemType pitch_ = kDEFAULT_PITCH;
-  ElemType yaw_ = kDEFAULT_YAW;
+  ElemType fov_;
+  ElemType pitch_;
+  ElemType yaw_;
 };
 
 }  // namespace Scene

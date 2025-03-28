@@ -5,16 +5,14 @@
 
 namespace Linear {
 
+Triangle::Triangle() = default;
+
 Triangle::Triangle(const Matrix<Detail::Height{4}, Detail::Width{3}>& matrix)
     : points_({matrix.GetColumn(0), matrix.GetColumn(1), matrix.GetColumn(2)}) {
-  assert(CollinearCheck(points_[0], points_[1], points_[2]) &&
-         "To make triangle, his vertices must not lay on one straight line");
 }
 
 Triangle::Triangle(const Point4& a, const Point4& b, const Point4& c)
     : points_({a, b, c}) {
-  assert(CollinearCheck(a, b, c) &&
-         "To make triangle, his vertices must not lay on one straight line");
 }
 
 Point4& Triangle::operator()(Index index) {
@@ -35,7 +33,7 @@ Point4 Triangle::GetNormal() const {
   return Normalize(n);
 }
 
-Point4 Triangle::GetPointByBarycentric(const Point4& barycentric_point) {
+Point4 Triangle::GetPointByBarycentric(const Point4& barycentric_point) const {
   Point4 result_point;
   for (Index i = 0; i < 3; ++i) {
     result_point += barycentric_point(i) * points_[i];

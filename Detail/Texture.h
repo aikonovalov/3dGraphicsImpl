@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdint>
 #include <vector>
-#include "Material.h"
 #include "Palette.h"
 
 namespace Detail {
@@ -25,6 +24,10 @@ public:
   }
 
   Detail::Color Sample(const Vector4& texture_coords) const {
+
+    if (texture_data_.empty() || width_ == Width{0} || height_ == Height{0}) {
+      return kDEFAULT_COLOR;
+    }
     ElemType u = texture_coords(0) - std::floor(texture_coords(0));
     ElemType v = texture_coords(1) - std::floor(texture_coords(1));
 
@@ -42,6 +45,8 @@ public:
   }
 
 private:
+  static constexpr Color kDEFAULT_COLOR = 0xFFFFFFFF;
+
   Colors texture_data_;
   Height height_;
   Width width_;

@@ -22,6 +22,10 @@ ElemType Plane::GetDistance(const Point4& point) const {
   return DotProduct(normal_, point) + shift_;
 }
 
+Point4 Plane::GetNormal() const {
+  return normal_;
+}
+
 IntersectionResult Plane::GetIntersectWithVector(
     const OffsetedVector& vector) const {
   ElemType dist1 = this->GetDistance(vector.begin);

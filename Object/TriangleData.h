@@ -8,23 +8,21 @@
 namespace Scene {
 
 struct TriangleData {
-  Linear::Triangle vertices;
-  Linear::Triangle normals;
-  Linear::Triangle texture_coords;
+  using Triangle = Linear::Triangle;
+  using Index = Linear::Index;
 
-  Detail::Material material;
-  Detail::Texture texture;
+  Triangle vertices;
+  Triangle normals;
+  Triangle texture_coords;
 
-  TriangleData(const Linear::Triangle& vertices,
-               const Linear::Triangle& normals,
-               const Linear::Triangle& texture_coords,
-               const Detail::Material& material = {},
-               const Detail::Texture& texture = {})
+  Index material_index = -1;
+
+  TriangleData(const Triangle& vertices, const Triangle& normals,
+               const Triangle& texture_coords, const Index material_index = -1)
       : vertices(vertices),
         normals(normals),
         texture_coords(texture_coords),
-        material(material),
-        texture(texture) {
+        material_index(material_index) {
   }
 };
 

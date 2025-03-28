@@ -2,21 +2,20 @@
 
 #include <cstdint>
 #include "Palette.h"
+#include "Texture.h"
 
 namespace Detail {
 
 struct Material {
-  using ELemType = Linear::ElemType;
+  Linear::Vector4 ambient = {0.1f, 0.1f, 0.1f, 0.0f};
+  Linear::Vector4 diffuse = {0.8f, 0.8f, 0.8f, 0.0f};
+  Linear::Vector4 specular = {1.0f, 1.0f, 1.0f, 0.0f};
 
-  static constexpr Color kDEFAULT_AMBIENT_COLOR = 0xFFFFFFFF;
-  static constexpr Color kDEFAULT_DIFFUSE_COLOR = 0xFFFFFFFF;
-  static constexpr Color kDEFAULT_SPECULAR_COLOR = 0xFFFFFFFF;
-  static constexpr ELemType kDEFAULT_SHININESS = 32.0;
+  float shininess = 32.0f;
+  Detail::Texture texture;
 
-  Color ambient_color = kDEFAULT_AMBIENT_COLOR;
-  Color diffuse_color = kDEFAULT_DIFFUSE_COLOR;
-  Color specular_color = kDEFAULT_SPECULAR_COLOR;
-  ELemType shininess = kDEFAULT_SHININESS;
+  static constexpr Color kDEFAULT_BASE_COLOR = 0xFFFFFFFF;
+  Color base_color = kDEFAULT_BASE_COLOR;
 };
 
 }  // namespace Detail

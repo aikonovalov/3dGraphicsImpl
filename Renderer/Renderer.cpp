@@ -13,27 +13,73 @@ void Renderer::CameraRatioCheck(Camera& camera, WindowSize window_size) {
   }
 }
 
+bool Renderer::IsBackfaceCulled(const TriangleData& triangle,
+                                const Camera& camera) {
+  Point4 normal = triangle.vertices.GetNormal();
+  Point4 vertex = triangle.vertices(0);
+  Point4 view_vector = Linear::Normalize(camera.GetPosition() - vertex);
+
+  return Linear::DotProduct(normal, view_vector) < -kEPS;
+}
+
 Linear::Point4 Renderer::ComputeBarycentric(const Point4& point,
-                                            const TriangleData& triangle_data,
+                                            const Triangle& triangle,
                                             const ElemType& triangle_area) {
   ElemType area01 =
-      Triangle{triangle_data.vertices(0), triangle_data.vertices(1), point}
-          .GetAreaXYProjection();
+      Triangle{triangle(0), triangle(1), point}.GetAreaXYProjection();
   ElemType area12 =
-      Triangle{triangle_data.vertices(1), triangle_data.vertices(2), point}
-          .GetAreaXYProjection();
+      Triangle{triangle(1), triangle(2), point}.GetAreaXYProjection();
   ElemType area20 =
-      Triangle{triangle_data.vertices(2), triangle_data.vertices(0), point}
-          .GetAreaXYProjection();
+      Triangle{triangle(2), triangle(0), point}.GetAreaXYProjection();
 
   return {area01 / triangle_area, area12 / triangle_area,
           area20 / triangle_area, 0};
 }
 
-double Renderer::ComputeLighting(const Point4& normal, const Point4& light_dir,
-                                 double ambient, double diffuse) {
-  double lambert = std::max(0.0, DotProduct(normal, light_dir));
-  return ambient + diffuse * lambert;
+Linear::ElemType Renderer::MultiplyColor(const Color& color,
+                                         const ElemType& scalar) {
+  uint8_t a = (color >> 24) & 0xFF;
+  uint8_t r = (color >> 16) & 0xFF;
+  uint8_t g = (color >> 8) & 0xFF;
+  uint8_t b = color & 0xFF;
+
+  auto clampChannel = [](int channel) -> uint8_t {
+    return static_cast<uint8_t>(std::min(255, std::max(0, channel)));
+  };
+
+  int new_r = static_cast<int>(r * scalar);
+  int new_g = static_cast<int>(g * scalar);
+  int new_b = static_cast<int>(b * scalar);
+
+  Color result = (static_cast<Color>(a) << 24) |
+                 (static_cast<Color>(clampChannel(new_r)) << 16) |
+                 (static_cast<Color>(clampChannel(new_g)) << 8) |
+                 static_cast<Color>(clampChannel(new_b));
+  return result;
+}
+
+Linear::Point4 Renderer::ConstructTextureCoord(
+    const TriangleData& triangle_data, const Point4& barycentric_point,
+    const Point4& normalize_point) const {
+  ElemType normalize_coeff = 0;
+  for (Index i = 0; i < 3; ++i) {
+    normalize_coeff += barycentric_point(i) * normalize_point(i);
+  }
+  Point4 result;
+  for (Index i = 0; i < 3; ++i) {
+    result += triangle_data.texture_coords(i) * normalize_point(i) *
+              barycentric_point(i);
+  }
+  result *= (1.0 / normalize_coeff);
+  return result;
+}
+
+Detail::Color Renderer::GetTextureColor(const Material* const material,
+                                        const Point4& texture_coord) const {
+  if (material) {
+    return material->texture.Sample(texture_coord);
+  }
+  return kDEFAULT_COLOR;
 }
 
 void Renderer::ClipTrianglesThroughPlane(const Plane& plane,
@@ -56,9 +102,9 @@ void Renderer::ClipTrianglesThroughPlane(const Plane& plane,
     ElemType dist1 = plane.GetDistance(curr.vertices(1));
     ElemType dist2 = plane.GetDistance(curr.vertices(2));
 
-    if (dist0 <= 0 && dist1 <= 0 && dist2 <= 0) {
+    if (dist0 < -kEPS && dist1 < -kEPS && dist2 < -kEPS) {
       continue;
-    } else if (dist0 >= 0 && dist1 >= 0 && dist2 >= 0) {
+    } else if (dist0 > kEPS && dist1 > kEPS && dist2 > kEPS) {
       clip_pool.push(curr);
       continue;
     }
@@ -99,30 +145,26 @@ void Renderer::ClipTrianglesThroughPlane(const Plane& plane,
             {{intersect_20, intersect_12, curr.vertices(2)},
              {normal_20, normal_12, curr.normals(2)},
              {texture_coords_20, texture_coords_12, curr.texture_coords(2)},
-             curr.material,
-             curr.texture});
+             curr.material_index});
       } else if (dist2 <= 0) {
         // Vertices 0 and 2 outside of S+, only 1 in S+
         clip_pool.push(
-            {{intersect_01, intersect_12, curr.vertices(1)},
-             {normal_01, normal_12, curr.normals(1)},
-             {texture_coords_01, texture_coords_12, curr.texture_coords(1)},
-             curr.material,
-             curr.texture});
+            {{intersect_01, curr.vertices(1), intersect_12},
+             {normal_01, curr.normals(1), normal_12},
+             {texture_coords_01, curr.texture_coords(1), texture_coords_12},
+             curr.material_index});
       } else {
         // Vertex 0 is outside of S+, and 1 and 2 are in S+
         clip_pool.push({{intersect_01, curr.vertices(1), curr.vertices(2)},
                         {normal_01, curr.normals(1), curr.normals(2)},
                         {texture_coords_01, curr.texture_coords(1),
                          curr.texture_coords(2)},
-                        curr.material,
-                        curr.texture});
+                        curr.material_index});
         clip_pool.push(
             {{intersect_01, curr.vertices(2), intersect_20},
              {normal_01, curr.normals(2), normal_20},
              {texture_coords_01, curr.texture_coords(2), texture_coords_20},
-             curr.material,
-             curr.texture});
+             curr.material_index});
       }
     } else if (dist1 <= 0) {
       // Vertex 1 is outside of S+, and 0 is in S+
@@ -132,22 +174,19 @@ void Renderer::ClipTrianglesThroughPlane(const Plane& plane,
             {{curr.vertices(0), intersect_01, intersect_20},
              {curr.normals(0), normal_01, normal_20},
              {curr.texture_coords(0), texture_coords_01, texture_coords_20},
-             curr.material,
-             curr.texture});
+             curr.material_index});
       } else {
         // Vertices 0 and 2 in S+, vertex 1 outside S+
         clip_pool.push(
             {{curr.vertices(0), intersect_01, intersect_12},
              {curr.normals(0), normal_01, normal_12},
              {curr.texture_coords(0), texture_coords_01, texture_coords_12},
-             curr.material,
-             curr.texture});
+             curr.material_index});
         clip_pool.push({{curr.vertices(0), intersect_12, curr.vertices(2)},
                         {curr.normals(0), normal_12, curr.normals(2)},
                         {curr.texture_coords(0), texture_coords_12,
                          curr.texture_coords(2)},
-                        curr.material,
-                        curr.texture});
+                        curr.material_index});
       }
     } else {
       // Vertices 0 and 1 are in S+, and 2 are outside S+
@@ -155,14 +194,12 @@ void Renderer::ClipTrianglesThroughPlane(const Plane& plane,
           {{curr.vertices(0), curr.vertices(1), intersect_12},
            {curr.normals(0), curr.normals(1), normal_12},
            {curr.texture_coords(0), curr.texture_coords(1), texture_coords_12},
-           curr.material,
-           curr.texture});
+           curr.material_index});
       clip_pool.push(
           {{curr.vertices(0), intersect_12, intersect_20},
            {curr.normals(0), normal_12, normal_20},
            {curr.texture_coords(0), texture_coords_12, texture_coords_20},
-           curr.material,
-           curr.texture});
+           curr.material_index});
     }
   }
 }
@@ -173,7 +210,7 @@ void Renderer::DrawPixel(const WindowSize& window_size, ScreenPicture& pixels,
   if (location.x >= 0 && location.x < window_size.width && location.y >= 0 &&
       location.y < window_size.height) {
     int index = location.y * window_size.width + location.x;
-    if (location.depth <= z_buffer[index]) {
+    if (location.depth < z_buffer[index]) {
       pixels[index] = color;
       z_buffer[index] = location.depth;
     }
@@ -252,11 +289,21 @@ void Renderer::DrawBorder(const TriangleData& triangle_data,
 }
 
 void Renderer::RasterizeTriangle(TriangleData& triangle_data,
-                                 WindowSize window_size, ScreenPicture& pixels,
-                                 ZBuffer& z_buffer) {
+                                 const Material* const material,
+                                 const Camera& camera, WindowSize window_size,
+                                 ScreenPicture& pixels, ZBuffer& z_buffer,
+                                 const Lights& lights) {
+
+  // For correct light computaion
+  TriangleData triangle_cpy = triangle_data;
+
+  // Frustum transform
+  triangle_data.vertices.Transform(camera.GetFullFrustumMatrix());
+
+  Point4 normalize_point;
   for (Index i = 0; i < 3; ++i) {
-    triangle_data.vertices(i) =
-        triangle_data.vertices(i) * (1.0 / triangle_data.vertices(i)(3));
+    normalize_point(i) = 1 / triangle_data.vertices(i)(3);
+    triangle_data.vertices(i) = triangle_data.vertices(i) * normalize_point(i);
     triangle_data.vertices(i)(0) =
         ConvertToScreenX(window_size, triangle_data.vertices(i)(0));
     triangle_data.vertices(i)(1) =
@@ -264,10 +311,6 @@ void Renderer::RasterizeTriangle(TriangleData& triangle_data,
   }
 
   ElemType triangle_area = triangle_data.vertices.GetAreaXYProjection();
-  if (std::abs(triangle_area) < kEPS) {
-    // TriangleData is degenerate
-    return;
-  }
 
   OffsetedVector bound_box_borders =
       GetBoundingBoxBorders(triangle_data, window_size);
@@ -276,14 +319,26 @@ void Renderer::RasterizeTriangle(TriangleData& triangle_data,
        ++i) {
     for (Index j = bound_box_borders.begin(0); j <= bound_box_borders.end(0);
          ++j) {
-      Point4 barycentric_point = ComputeBarycentric(
-          {ElemType(j), ElemType(i), 0, 0}, triangle_data, triangle_area);
+      Point4 barycentric_point =
+          ComputeBarycentric({ElemType(j), ElemType(i), 0, 0},
+                             triangle_data.vertices, triangle_area);
       if (barycentric_point(0) >= -kEPS && barycentric_point(1) >= -kEPS &&
           barycentric_point(2) >= -kEPS) {
         ElemType depth =
             triangle_data.vertices.GetPointByBarycentric(barycentric_point)(2);
+
+        ElemType intensity = light_manager_.ComputeLightning(
+            {}, triangle_cpy, barycentric_point, lights);
+
+        Point4 texture_coord = ConstructTextureCoord(
+            triangle_cpy, barycentric_point, normalize_point);
+
+        Color texture_color = GetTextureColor(material, texture_coord);
+
+        Color final_color = MultiplyColor(texture_color, intensity);
+
         DrawPixel(window_size, pixels, z_buffer, {Height(i), Width(j), depth},
-                  0xFFFFFF);
+                  final_color);
       }
     }
   }
@@ -294,6 +349,11 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
                                             const Lights& lights,
                                             WindowSize window_size) {
   CameraRatioCheck(camera, window_size);
+
+  Lights view_lights = lights;
+  for (auto& light : view_lights) {
+    light.position -= camera.GetPosition();
+  }
 
   ScreenPicture pixels(window_size.width * window_size.height, 0x000000);
   ZBuffer z_buf(window_size.width * window_size.height, kMAX_Z_DEPTH);
@@ -307,7 +367,10 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
       TriangleData triangle_data = object(index);
       triangle_data.vertices.OffsetCoords(object.GetPosition() -
                                           camera.GetPosition());
-      clipping_pool.push(triangle_data);
+
+      if (!IsBackfaceCulled(triangle_data, camera)) {
+        clipping_pool.push(triangle_data);
+      }
     }
 
     ClipTrianglesThroughPlane(frustum_planes.near, clipping_pool);
@@ -319,22 +382,17 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
     ClipTrianglesThroughPlane(frustum_planes.left, clipping_pool);
     ClipTrianglesThroughPlane(frustum_planes.right, clipping_pool);
 
-    // Frustum apply
-    std::vector<TriangleData> frustumed_triangles;
+    std::vector<TriangleData> clipped_triangles;
     while (!clipping_pool.empty()) {
-      clipping_pool.front().vertices.Transform(camera.GetFullFrustumMatrix());
-      frustumed_triangles.push_back(std::move(clipping_pool.front()));
-
+      clipped_triangles.push_back(std::move(clipping_pool.front()));
       clipping_pool.pop();
     }
 
     // Draw triangles
-    for (auto& triangle_data : frustumed_triangles) {
-      RasterizeTriangle(triangle_data, window_size, pixels, z_buf);
-    }
-    // Draw triangle borders
-    for (auto& triangle_data : frustumed_triangles) {
-      DrawBorder(triangle_data, window_size, pixels, z_buf, kBORDER_COLOR);
+    for (auto& triangle_data : clipped_triangles) {
+      RasterizeTriangle(triangle_data,
+                        object.GetMaterial(triangle_data.material_index),
+                        camera, window_size, pixels, z_buf, view_lights);
     }
   }
 

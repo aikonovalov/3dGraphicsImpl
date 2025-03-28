@@ -15,6 +15,16 @@ Camera::Camera(const Point4& position, const ElemType aspect_ratio,
       yaw_(yaw) {
 }
 
+void Camera::LookAtPoint(const Point4& view_point) {
+  const Vector4 new_direction = Linear::Normalize(view_point - position_);
+
+  SetYAW(std::atan2(new_direction(1), new_direction(0)));
+
+  SetPitch(std::atan2(new_direction(2),
+                      std::sqrt(new_direction(0) * new_direction(0) +
+                                new_direction(1) * new_direction(1))));
+}
+
 Linear::TransformMatrix4x4 Camera::GetAlignedFrustumMatrix() const {
   const ElemType tanHalfFov = std::tan(GetFOV() / 2.0);
 

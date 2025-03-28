@@ -41,8 +41,11 @@ struct Light {
   Point4 direction;
   Point4 position;
 
-  ElemType intensity;
-  ElemType attenuation;
+  ElemType ambient = 0.2;
+  ElemType diffuse = 1.0;
+
+  ElemType intensity = 1.0;
+  ElemType attenuation = 1.0;
 };
 
 using Lights = std::vector<Light>;

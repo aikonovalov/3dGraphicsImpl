@@ -28,38 +28,38 @@ void Controller::ResizeWindow(Observer* observer, WindowSize new_size) {
 
 void Controller::onMoveObject(Index index, ElemType dx, ElemType dy,
                               ElemType dz) {
-  std::cout << dx << " " << dy << " " << dz << "\n";
-  if (index >= 0 && index < static_cast<int>(model_link_->objects_.size())) {
-    Point4 pos = (*model_link_)(index).GetPosition();
-    pos(0) += dx;
-    pos(1) += dy;
-    pos(2) += dz;
-    (*model_link_)(index).SetPosition(pos);
+  if (index >= 0 && index < model_link_->objects_.size()) {
+    Point4 position = (*model_link_)(index).GetPosition();
+    position(0) += dx;
+    position(1) += dy;
+    position(2) += dz;
+    (*model_link_)(index).SetPosition(position);
     UpdateAll();
   }
 }
 
 void Controller::onMoveCamera(ElemType dx, ElemType dy, ElemType dz) {
-  auto pos = model_link_->camera_.GetPosition();
-  pos(0) += dx;
-  pos(1) += dy;
-  pos(2) += dz;
-  model_link_->camera_.SetPosition(pos);
+  Point4 position = model_link_->camera_.GetPosition();
+  position(0) += dx;
+  position(1) += dy;
+  position(2) += dz;
+  model_link_->camera_.SetPosition(position);
   UpdateAll();
 }
 
 void Controller::onRotateObject(Index index, ElemType rx, ElemType ry,
                                 ElemType rz) {
   if (index >= 0 && index < model_link_->GetObjectsCount()) {
-    auto rotationX = TransformMatrix4x4::MakeRotationX(rx);
-    auto rotationY = TransformMatrix4x4::MakeRotationY(ry);
-    auto rotationZ = TransformMatrix4x4::MakeRotationZ(rz);
+    TransformMatrix4x4 rotation_x = TransformMatrix4x4::MakeRotationX(rx);
+    TransformMatrix4x4 rotation_y = TransformMatrix4x4::MakeRotationY(ry);
+    TransformMatrix4x4 rotation_z = TransformMatrix4x4::MakeRotationZ(rz);
 
-    TransformMatrix4x4 rotationMatrix = rotationZ * rotationY * rotationX;
+    TransformMatrix4x4 rotation_matrix = rotation_z * rotation_y * rotation_x;
 
     Object& object = (*model_link_)(index);
     for (Index i = 0; i < object.GetTrianglesCount(); ++i) {
-      object(i).vertices.Transform(rotationMatrix);
+      object(i).vertices.Transform(rotation_matrix);
+      object(i).normals.Transform(rotation_matrix);
     }
 
     UpdateAll();
@@ -67,8 +67,8 @@ void Controller::onRotateObject(Index index, ElemType rx, ElemType ry,
 }
 
 void Controller::onRotateCamera(ElemType delta_pitch, ElemType delta_yaw) {
-  auto current_pitch = model_link_->camera_.GetPitch();
-  auto current_yaw = model_link_->camera_.GetYAW();
+  ElemType current_pitch = model_link_->camera_.GetPitch();
+  ElemType current_yaw = model_link_->camera_.GetYAW();
 
   model_link_->camera_.SetPitch(current_pitch + delta_pitch);
   model_link_->camera_.SetYAW(current_yaw + delta_yaw);

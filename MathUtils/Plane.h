@@ -27,6 +27,8 @@ public:
   Plane(const Point4& point1, const Point4& point2, const Point4& point3);
 
   ElemType GetDistance(const Point4& point) const;
+  Point4 GetNormal() const;
+
   IntersectionResult GetIntersectWithVector(const OffsetedVector& vector) const;
 
   void Transform(const TransformMatrix4x4& transform_matrix,
