@@ -1,42 +1,33 @@
 #include "Object.h"
-#include <cstddef>
-#include <cstring>
-#include <memory>
-#include "TriangleBuffer.h"
 
 namespace Scene {
 
-Object::Object() : buffer(){};
+const Linear::Point4 Object::kDEFAULT_POSITION = {0, 0, 0, 1};
 
-Object::Object(const Object& other) : buffer(other.buffer) {}
-
-Object::Object(Object&& other) noexcept : buffer(other.buffer) {}
-
-Object::Object(const std::vector<Linear::Triangle>& triangles)
-    : buffer(triangles) {}
-
-Object::~Object() = default;
-
-size_t Object::GetTrianglesCount() const {
-  return buffer.GetTrianglesCount();
+Object::Object(std::vector<Linear::Triangle>&& triangles)
+    : triangles_(std::move(triangles)) {
 }
 
-Linear::Triangle& Object::GetTriangle(size_t index) {
-  return buffer.GetTriangle(index);
+Linear::Index Object::GetTrianglesCount() const {
+  return triangles_.size();
 }
 
-// ObjectAlt::ObjectAlt() : triangles_cnt_(0) {}
+Linear::Triangle Object::GetTriangle(Index index) const {
+  assert(index >= 0 && index < triangles_.size() && "Invalid index");
+  return triangles_[index];
+}
+void Object::SetTriangle(Linear::Index index,
+                         const Linear::Triangle& new_triangle) {
+  assert(index >= 0 && index < triangles_.size() && "Invalid index");
+  triangles_[index] = new_triangle;
+}
 
-// ObjectAlt::ObjectAlt(const std::vector<Linear::Triangle>& triangles)
-//     : triangles_cnt_(triangles.size()), triangle_holder_(triangles) {}
+Linear::Point4 Object::GetPosition() const {
+  return position_;
+}
 
-// ObjectAlt::~ObjectAlt() = default;
-
-// Linear::Triangle& ObjectAlt::GetTriangle(size_t index) {
-//   if (index >= triangles_cnt_) {
-//     throw std::invalid_argument("Triangle index is invalid");
-//   }
-//   return triangle_holder_[index];
-// }
+void Object::SetPosition(const Linear::Point4& new_position) {
+  position_ = new_position;
+}
 
 }  // namespace Scene

@@ -93,28 +93,28 @@ public:
     return *this;
   }
 
-  ElemType& operator()(ElemType row, ElemType column) {
-    assert(row < height && column < width &&
+  ElemType& operator()(Index row, Index column) {
+    assert(row >= 0 && row < height && column >= 0 && column < width &&
            "In Matrix's \"At\" method : arg' size mismatch");
     return elements_[row * width + column];
   }
-  const ElemType& operator()(ElemType row, ElemType column) const {
-    assert(row < height && column < width &&
+  const ElemType& operator()(Index row, Index column) const {
+    assert(row >= 0 && row < height && column >= 0 && column < width &&
            "In Matrix's \"At\" method : arg' size mismatch");
     return elements_[row * width + column];
   }
 
-  ElemType& operator()(ElemType index)
+  ElemType& operator()(Index index)
     requires(GetWidth() == 1)
   {
-    assert(index < height * width &&
+    assert(index >= 0 && index < height &&
            "In Matrix's \"At\" method : arg' size mismatch");
     return elements_[index];
   }
-  const ElemType& operator()(ElemType index) const
+  const ElemType& operator()(Index index) const
     requires(GetWidth() == 1)
   {
-    assert(index < height * width &&
+    assert(index >= 0 && index < height &&
            "In Matrix's \"At\" method : arg' size mismatch");
     return elements_[index];
   }
@@ -214,6 +214,7 @@ public:
   }
 
   Matrix<Height{1}, width> GetRow(Index index) const {
+    assert(index >= 0 && index < GetHeight() && "Index out of range");
     Matrix<Height{1}, width> row;
     for (Index i = 0; i < GetWidth(); ++i) {
       row(0, i) = (*this)(index, i);
@@ -223,6 +224,7 @@ public:
   }
 
   Matrix<height, Width{1}> GetColumn(Index index) const {
+    assert(index >= 0 && index < GetWidth() && "Index out of range");
     Matrix<height, Width{1}> col;
     for (Index i = 0; i < GetHeight(); ++i) {
       col(i) = (*this)(i, index);
@@ -234,18 +236,23 @@ public:
   enum From : Index;
   enum To : Index;
   void AddToRow(From from, To to, ElemType lambda) {
+    assert(from >= 0 && from < GetHeight() && "\"From\" index out of range");
+    assert(to >= 0 && to < GetHeight() && "\"To\" index out of range");
     for (Index i = 0; i < GetWidth(); ++i) {
       (*this)(to, i) += (*this)(from, i) * lambda;
     }
   }
 
   void SwapRows(From from, To to) {
+    assert(from >= 0 && from < GetHeight() && "\"From\" index out of range");
+    assert(to >= 0 && to < GetHeight() && "\"To\" index out of range");
     for (Index i = 0; i < GetWidth(); ++i) {
       std::swap((*this)(to, i), (*this)(from, i));
     }
   }
 
   void MultiplyRow(Index row, ElemType lambda) {
+    assert(row >= 0 && row < GetHeight() && "Index out of range");
     for (Index i = 0; i < GetWidth(); ++i) {
       (*this)(row, i) *= lambda;
     }

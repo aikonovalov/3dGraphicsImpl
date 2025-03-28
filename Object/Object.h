@@ -1,51 +1,31 @@
 #pragma once
 
-#include <cstddef>
-#include <memory>
-#include <stdexcept>
-#include <type_traits>
 #include <vector>
-#include "TriangleBuffer.h"
+#include "../MathUtils/Triangle.h"
 
 namespace Scene {
 
 class Object {
-  using ElemType = double;
+  using Triangle = Linear::Triangle;
+  using Point4 = Linear::Point4;
+  using Index = Linear::Index;
 
 public:
-  Object();
+  Object(std::vector<Triangle>&& triangles);
 
-  Object(const Object&);
-  Object(Object&&) noexcept;
-  Object& operator=(const Object&);
-  Object& operator=(Object&&) noexcept;
+  Index GetTrianglesCount() const;
 
-  Object(const std::vector<Linear::Triangle>&);
+  Triangle GetTriangle(Index index) const;
+  void SetTriangle(Index index, const Triangle& new_triangle);
 
-  ~Object();
-
-  size_t GetTrianglesCount() const;
-
-  Linear::Triangle& GetTriangle(size_t);
+  Point4 GetPosition() const;
+  void SetPosition(const Point4& new_position);
 
 private:
-  TriangleBuffer buffer;
+  static const Point4 kDEFAULT_POSITION;
+
+  Point4 position_ = kDEFAULT_POSITION;
+  std::vector<Triangle> triangles_;
 };
-
-// class ObjectAlt {
-//   using ElemType = double;
-
-// public:
-//   ObjectAlt();
-//   ObjectAlt(const std::vector<Linear::Triangle>&);
-
-//   ~ObjectAlt();
-
-//   Linear::Triangle& GetTriangle(size_t);
-
-// private:
-//   size_t triangles_cnt_;
-//   std::vector<Linear::Triangle> triangle_holder_;
-// };
 
 }  // namespace Scene

@@ -69,20 +69,22 @@ private:
 
   static const Point4 kDEFAULT_POSITION;
   static const Vector4 kWORLD_UP_VEC;
-  static const ElemType kDEFAULT_FOCAL_LENGTH;
+  static const ElemType kDEFAULT_ASPECT_RATIO;
+  static const ElemType kDEFAULT_NEAR_DISTANCE;
+  static const ElemType kDEFAULT_FAR_DISTANCE;
 
   static const ElemType kDEFAULT_FOV;
   static const ElemType kDEFAULT_PITCH;
   static const ElemType kDEFAULT_YAW;
 
-  Point4 position_;
-  ElemType aspect_ratio_;
-  ElemType near_distance_;
-  ElemType far_distance_;
+  Point4 position_ = kDEFAULT_POSITION;
+  ElemType aspect_ratio_ = kDEFAULT_ASPECT_RATIO;
+  ElemType near_distance_ = kDEFAULT_NEAR_DISTANCE;
+  ElemType far_distance_ = kDEFAULT_FAR_DISTANCE;
 
-  ElemType fov_;
-  ElemType pitch_;
-  ElemType yaw_;
+  ElemType fov_ = kDEFAULT_FOV;
+  ElemType pitch_ = kDEFAULT_PITCH;
+  ElemType yaw_ = kDEFAULT_YAW;
 };
 
 }  // namespace Scene
