@@ -1,6 +1,5 @@
 #include "Plane.h"
 #include <cstddef>
-#include <optional>
 #include "Point4.h"
 
 namespace Linear {
@@ -23,17 +22,16 @@ Plane::ElemType Plane::GetDistance(const Point4& point) {
   return DotProduct(normal_, point) + shift_;
 }
 
-std::optional<Point4> Plane::GetIntersectWithVector(
-    const OffsetedVector& vector) {
+IntersectionResult Plane::GetIntersectWithVector(const OffsetedVector& vector) {
   ElemType dist1 = this->GetDistance(vector.begin);
   ElemType dist2 = this->GetDistance(vector.end);
 
   if (dist1 * dist2 > 0) {
-    return std::nullopt;
+    return IntersectionResult{.has_intersection = false};
   }
   ElemType lambda = dist1 / (dist1 - dist2);
   Vector4 result = vector.begin + (vector.end - vector.begin) * lambda;
-  return result;
+  return IntersectionResult{.has_intersection = true, .intersection = result};
 }
 
 void Plane::ClipThrough(std::queue<Linear::Triangle>& clip_pool) {
@@ -50,9 +48,9 @@ void Plane::ClipThrough(std::queue<Linear::Triangle>& clip_pool) {
   for (size_t i = 0; i < pool_size; ++i) {
     Linear::Triangle curr = clip_pool.front();
     clip_pool.pop();
-    ElemType dist0 = GetDistance(curr.GetPoint(0));
-    ElemType dist1 = GetDistance(curr.GetPoint(1));
-    ElemType dist2 = GetDistance(curr.GetPoint(2));
+    ElemType dist0 = GetDistance(curr(0));
+    ElemType dist1 = GetDistance(curr(1));
+    ElemType dist2 = GetDistance(curr(2));
 
     if (dist0 <= 0 && dist1 <= 0 && dist2 <= 0) {
       continue;
@@ -60,34 +58,42 @@ void Plane::ClipThrough(std::queue<Linear::Triangle>& clip_pool) {
       clip_pool.push(curr);
     }
 
-    Point4 intersect_01, intersect_12, intersect_20;
-    intersect_01 = GetIntersectWithVector({curr.GetPoint(0), curr.GetPoint(1)});
-    intersect_12 = GetIntersectWithVector({curr.GetPoint(1), curr.GetPoint(2)});
-    intersect_20 = GetIntersectWithVector({curr.GetPoint(2), curr.GetPoint(0)});
+    IntersectionResult intersect_01 =
+        GetIntersectWithVector({curr(0), curr(1)});
+    IntersectionResult intersect_12 =
+        GetIntersectWithVector({curr(1), curr(2)});
+    IntersectionResult intersect_20 =
+        GetIntersectWithVector({curr(2), curr(0)});
 
     if (dist0 <= 0) {
       if (dist1 <= 0) {
-        clip_pool.emplace(intersect_20, intersect_12, curr.GetPoint(2));
+        clip_pool.emplace(intersect_20.intersection, intersect_12.intersection,
+                          curr(2));
       } else if (dist2 <= 0) {
         // dist1 > 0
-        clip_pool.emplace(intersect_01, intersect_12, curr.GetPoint(2));
+        clip_pool.emplace(intersect_01.intersection, intersect_12.intersection,
+                          curr(2));
       } else {
         // dist1 > 0 && dist2 > 0
-        clip_pool.emplace(intersect_01, curr.GetPoint(1), curr.GetPoint(2));
-        clip_pool.emplace(intersect_01, curr.GetPoint(2), intersect_20);
+        clip_pool.emplace(intersect_01.intersection, curr(1), curr(2));
+        clip_pool.emplace(intersect_01.intersection, curr(2),
+                          intersect_20.intersection);
       }
     } else if (dist1 <= 0) {
       // dist0 > 0
       if (dist2 <= 0) {
-        clip_pool.emplace(curr.GetPoint(0), intersect_01, intersect_20);
+        clip_pool.emplace(curr(0), intersect_01.intersection,
+                          intersect_20.intersection);
       } else {
-        clip_pool.emplace(curr.GetPoint(0), intersect_01, intersect_12);
-        clip_pool.emplace(curr.GetPoint(0), intersect_12, curr.GetPoint(2));
+        clip_pool.emplace(curr(0), intersect_01.intersection,
+                          intersect_12.intersection);
+        clip_pool.emplace(curr(0), intersect_12.intersection, curr(2));
       }
     } else {
       // dist0 > 0 && dist1 > 0
-      clip_pool.emplace(curr.GetPoint(0), curr.GetPoint(1), intersect_12);
-      clip_pool.emplace(curr.GetPoint(0), intersect_12, intersect_20);
+      clip_pool.emplace(curr(0), curr(1), intersect_12.intersection);
+      clip_pool.emplace(curr(0), intersect_12.intersection,
+                        intersect_20.intersection);
     }
   }
 }

@@ -17,14 +17,14 @@ Triangle::Triangle(const Point4& a, const Point4& b, const Point4& c)
          "To make triangle, his vertices must not lay on one straight line");
 }
 
-Point4 Triangle::GetPoint(Index index) const {
+Point4 Triangle::operator()(Index index) const {
   assert(index > 0 && index < 3 && "Index must be an integer from 0 to 2");
   return points_[index];
 }
 
 Point4 Triangle::GetNormal() const {
-  Point4 vec1 = GetPoint(1) - GetPoint(0);
-  Point4 vec2 = GetPoint(2) - GetPoint(0);
+  Point4 vec1 = (*this)(1) - (*this)(0);
+  Point4 vec2 = (*this)(2) - (*this)(0);
 
   Point4 n = CrossProduct(vec1, vec2);
   return Normalize(n);

@@ -12,7 +12,7 @@ public:
   Triangle(const Point4&, const Point4&, const Point4&);
   Triangle(const Matrix<Detail::Height{4}, Detail::Width{3}>&);
 
-  Point4 GetPoint(Index) const;
+  Point4 operator()(Index index) const;
 
   Point4 GetNormal() const;
 
@@ -23,7 +23,7 @@ private:
                       const Point4& point3) const {
     Vector4 edge1 = point2 - point1;
     Vector4 edge2 = point3 - point1;
-    return IsEmpty(CrossProduct(edge1, edge2));
+    return !IsEmpty(CrossProduct(edge1, edge2));
   }
 
   std::array<Point4, 3> points_;
