@@ -25,6 +25,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${Qt6_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets Qt6::Gui)
 
-add_subdirectory(Screen)
+add_subdirectory(MathUtils)
+target_link_libraries(${PROJECT_NAME} PRIVATE MathUtils)
+add_subdirectory(Object)
+target_link_libraries(${PROJECT_NAME} PRIVATE Object)
+add_subdirectory(Core)
+target_link_libraries(${PROJECT_NAME} PRIVATE Core)
 
 include(CTest)

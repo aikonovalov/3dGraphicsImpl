@@ -12,6 +12,11 @@ struct OffsetedVector {
   Vector4 end;
 };
 
+struct IntersectionResult {
+  bool has_intersection;
+  Point4 intersection;
+};
+
 class Plane {
   using ElemType = Point4::ElemType;
 
@@ -22,7 +27,7 @@ public:
   Plane(const Point4& point1, const Point4& point2, const Point4& point3);
 
   ElemType GetDistance(const Point4& point);
-  std::optional<Point4> GetIntersectWithVector(const OffsetedVector& vector);
+  IntersectionResult GetIntersectWithVector(const OffsetedVector& vector);
 
   void ClipThrough(std::queue<Linear::Triangle>& clip_pool);
 
