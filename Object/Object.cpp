@@ -2,8 +2,6 @@
 
 namespace Scene {
 
-const Linear::Point4 Object::kDEFAULT_POSITION = {0, 0, 0, 1};
-
 Object::Object(std::vector<Linear::Triangle>&& triangles)
     : triangles_(std::move(triangles)) {
 }

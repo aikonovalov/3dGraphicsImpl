@@ -3,16 +3,6 @@
 
 namespace Scene {
 
-const Linear::Point4 Camera::kDEFAULT_POSITION = {0, 0, 0, 1};
-const Linear::Vector4 Camera::kWORLD_UP_VEC = {0, 0, 1, 0};
-const Linear::ElemType Camera::kDEFAULT_ASPECT_RATIO = 1;
-const Linear::ElemType Camera::kDEFAULT_NEAR_DISTANCE = 0.1;
-const Linear::ElemType Camera::kDEFAULT_FAR_DISTANCE = 1000;
-
-const Linear::ElemType Camera::kDEFAULT_FOV = M_PI / 2.0;
-const Linear::ElemType Camera::kDEFAULT_PITCH = 0;
-const Linear::ElemType Camera::kDEFAULT_YAW = 0;
-
 Camera::Camera(const Point4& position, const ElemType aspect_ratio,
                const ElemType near_distance, const ElemType far_distance,
                const ElemType fov, const ElemType pitch, const ElemType yaw)

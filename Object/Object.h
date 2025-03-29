@@ -11,6 +11,7 @@ class Object {
   using Index = Linear::Index;
 
 public:
+  Object() = default;
   Object(std::vector<Triangle>&& triangles);
 
   Index GetTrianglesCount() const;
@@ -22,7 +23,7 @@ public:
   void SetPosition(const Point4& new_position);
 
 private:
-  static const Point4 kDEFAULT_POSITION;
+  static inline const Point4 kDEFAULT_POSITION = {0, 0, 0, 1};
 
   Point4 position_ = kDEFAULT_POSITION;
   std::vector<Triangle> triangles_;

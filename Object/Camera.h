@@ -67,15 +67,16 @@ public:
 private:
   void UpdateDirection();
 
-  static const Point4 kDEFAULT_POSITION;
-  static const Vector4 kWORLD_UP_VEC;
-  static const ElemType kDEFAULT_ASPECT_RATIO;
-  static const ElemType kDEFAULT_NEAR_DISTANCE;
-  static const ElemType kDEFAULT_FAR_DISTANCE;
+  static inline const Point4 kDEFAULT_POSITION = {0, 0, 0, 1};
+  static inline const Vector4 kWORLD_UP_VEC = {0, 0, 1, 0};
+  ;
+  static inline const ElemType kDEFAULT_ASPECT_RATIO = 1;
+  static inline const ElemType kDEFAULT_NEAR_DISTANCE = 0.1;
+  static inline const ElemType kDEFAULT_FAR_DISTANCE = 1000.0;
 
-  static const ElemType kDEFAULT_FOV;
-  static const ElemType kDEFAULT_PITCH;
-  static const ElemType kDEFAULT_YAW;
+  static inline const ElemType kDEFAULT_FOV = M_PI / 2.0;
+  static inline const ElemType kDEFAULT_PITCH = 0;
+  static inline const ElemType kDEFAULT_YAW = 0;
 
   Point4 position_ = kDEFAULT_POSITION;
   ElemType aspect_ratio_ = kDEFAULT_ASPECT_RATIO;
