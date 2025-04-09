@@ -1,20 +1,36 @@
 #pragma once
 
+#include <QLabel>
+#include <QMainWindow>
+#include <QPixmap>
+#include <QWidget>
+#include <vector>
 #include "../Detail/Observer.h"
-#include "Model.h"
-#include "ViewBase.h"
+#include "../Detail/Palette.h"
+#include "Controller.h"
 
 namespace Core {
 
-class View : public ViewBase {
-  using Observer = Detail::Observer<ViewBase>;
+class View : public QMainWindow {
+  Q_OBJECT
+  using ScreenPicture = Detail::ScreenPicture;
+  using WindowSize = Detail::WindowSize;
+  using Observer = Detail::Observer<ScreenPicture, WindowSize>;
+  using Camera = Scene::Camera;
 
 public:
-  View(Model& model);
+  View(Controller* controller_link);
 
-  void process() override;
+  void Draw(ScreenPicture& screen_picture);
+
+  WindowSize GetWindowSize() const;
+
+protected:
+  void resizeEvent(QResizeEvent* event) override;
 
 private:
+  QLabel* label_;
+  Controller* controller_;
   Observer port_;
 };
 
