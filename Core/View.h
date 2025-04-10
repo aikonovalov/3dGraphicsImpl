@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QMainWindow>
 #include <QPixmap>

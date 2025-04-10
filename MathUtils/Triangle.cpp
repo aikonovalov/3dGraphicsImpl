@@ -1,6 +1,5 @@
 #include "Triangle.h"
 #include <cassert>
-#include <cstdlib>
 #include "Matrix.h"
 #include "Point4.h"
 

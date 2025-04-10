@@ -77,18 +77,18 @@ Linear::TransformMatrix4x4 Camera::GetFullFrustumMatrix() const {
 }
 
 const FrustumPlanes Camera::GetFrustumPlanes() const {
-  // In this method, we construct six clipping planes based on nine points of the camera's view frustum
   CameraAxes camera_axes = GetCameraAxes();
-  ElemType half_fov_tangens = std::tan(fov_ / 2.0);
 
-  ElemType near_height = 2 * half_fov_tangens * near_distance_;
+  ElemType half_fov = std::tan(fov_ / 2.0);
+
+  ElemType near_height = 2.0 * near_distance_ * half_fov;
   ElemType near_width = near_height * aspect_ratio_;
 
-  ElemType far_height = 2 * half_fov_tangens * far_distance_;
+  ElemType far_height = 2.0 * far_distance_ * half_fov;
   ElemType far_width = far_height * aspect_ratio_;
 
-  Point4 center_near_plane = camera_axes.forward * near_distance_;
-  Point4 center_far_plane = camera_axes.forward * far_distance_;
+  Point4 center_near_plane = -1.0 * camera_axes.forward * near_distance_;
+  Point4 center_far_plane = -1.0 * camera_axes.forward * far_distance_;
 
   Point4 near_up_left = center_near_plane -
                         camera_axes.right * (near_width / 2.0) +
@@ -116,13 +116,18 @@ const FrustumPlanes Camera::GetFrustumPlanes() const {
                           camera_axes.right * (far_width / 2.0) -
                           camera_axes.up * (far_height / 2.0);
 
-  return FrustumPlanes{
-      .near = {near_up_right, near_down_right, near_down_left},
-      .far = {far_down_left, far_down_right, far_up_right},
-      .up = {far_up_right, near_up_right, near_up_left},
-      .down = {far_down_right, near_down_left, near_down_right},
-      .left = {far_down_left, near_up_left, near_down_left},
-      .right = {near_up_right, far_down_right, near_down_right}};
+  FrustumPlanes planes;
+
+  planes.near = {near_down_left, near_down_right, near_up_right};
+  planes.far = {far_up_right, far_down_right, far_down_left};
+
+  planes.up = {near_up_left, near_up_right, far_up_right};
+  planes.down = {far_down_right, near_down_right, near_down_left};
+
+  planes.left = {near_down_left, near_up_left, far_up_left};
+  planes.right = {far_up_right, near_up_right, near_down_right};
+
+  return planes;
 }
 
 Linear::Point4 Camera::GetPosition() const {

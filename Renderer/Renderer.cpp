@@ -45,10 +45,10 @@ void Renderer::DrawPixel(const WindowSize& window_size, ScreenPicture& pixels,
                          Color color) {
   if (location.x >= 0 && location.x < window_size.width && location.y >= 0 &&
       location.y < window_size.height) {
-    if (location.depth <=
-        z_buffer[location.y * window_size.width + location.x]) {
-      pixels[location.y * window_size.width + location.x] = color;
-      z_buffer[location.y * window_size.width + location.x] = location.depth;
+    int index = location.y * window_size.width + location.x;
+    if (location.depth <= z_buffer[index]) {
+      pixels[index] = color;
+      z_buffer[index] = location.depth;
     }
   }
 }
@@ -141,18 +141,17 @@ void Renderer::RasterizeTriangle(Triangle& triangle, WindowSize window_size,
   OffsetedVector bound_box_borders =
       GetBoundingBoxBorders(triangle, window_size);
 
-  for (Index i = bound_box_borders.begin(1); i < bound_box_borders.end(1);
+  for (Index i = bound_box_borders.begin(1); i <= bound_box_borders.end(1);
        ++i) {
-    for (Index j = bound_box_borders.begin(0); j < bound_box_borders.end(0);
+    for (Index j = bound_box_borders.begin(0); j <= bound_box_borders.end(0);
          ++j) {
       Point4 barycentric_point = ComputeBarycentric(
           {ElemType(j), ElemType(i), 0, 0}, triangle, triangle_area);
       if (barycentric_point(0) >= -kEPS && barycentric_point(1) >= -kEPS &&
           barycentric_point(2) >= -kEPS) {
-        DrawPixel(
-            window_size, pixels, z_buffer,
-            {Height(i), Width(j), ComputeDepth(triangle, barycentric_point)},
-            0xFFFFFF);
+        ElemType depth = ComputeDepth(triangle, barycentric_point);
+        DrawPixel(window_size, pixels, z_buffer, {Height(i), Width(j), depth},
+                  0xFFFFFF);
       }
     }
   }
@@ -173,10 +172,8 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
     std::queue<Linear::Triangle> clipping_pool;
     for (auto index = 0; index < object.GetTrianglesCount(); ++index) {
       Triangle triangle = object.GetTriangle(index);
-      triangle.OffsetCoords(camera.GetPosition() - object.GetPosition());
-      // if (frustum_planes.near.IsTriangleFaceTo(triangle)) {
+      triangle.OffsetCoords(object.GetPosition() - camera.GetPosition());
       clipping_pool.push(triangle);
-      // }
     }
 
     frustum_planes.near.ClipThrough(clipping_pool);
@@ -197,9 +194,11 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
       clipping_pool.pop();
     }
 
+    // Draw triangles
     for (auto& triangle : frustumed_triangles) {
       RasterizeTriangle(triangle, window_size, pixels, z_buf);
     }
+    // Draw triangle borders
     for (auto& triangle : frustumed_triangles) {
       DrawBorder(triangle, window_size, pixels, z_buf, kBORDER_COLOR);
     }
