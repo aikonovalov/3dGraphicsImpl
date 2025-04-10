@@ -34,23 +34,22 @@ Linear::TransformMatrix4x4 Camera::GetAlignedFrustumMatrix() const {
 Linear::TransformMatrix4x4 Camera::GetViewDirectionMatrix() const {
   CameraAxes camera_axes = GetCameraAxes();
 
-  TransformMatrix4x4 view_direction_matrix{
-      camera_axes.right(0),
-      camera_axes.right(1),
-      camera_axes.right(2),
-      -Linear::DotProduct(camera_axes.right, position_),
-      camera_axes.up(0),
-      camera_axes.up(1),
-      camera_axes.up(2),
-      -Linear::DotProduct(camera_axes.up, position_),
-      -camera_axes.forward(0),
-      -camera_axes.forward(1),
-      -camera_axes.forward(2),
-      Linear::DotProduct(camera_axes.forward, position_),
-      0,
-      0,
-      0,
-      1};
+  TransformMatrix4x4 view_direction_matrix{camera_axes.right(0),
+                                           camera_axes.right(1),
+                                           camera_axes.right(2),
+                                           0,
+                                           camera_axes.up(0),
+                                           camera_axes.up(1),
+                                           camera_axes.up(2),
+                                           0,
+                                           -camera_axes.forward(0),
+                                           -camera_axes.forward(1),
+                                           -camera_axes.forward(2),
+                                           0,
+                                           0,
+                                           0,
+                                           0,
+                                           1};
 
   return view_direction_matrix;
 }
@@ -118,8 +117,8 @@ const FrustumPlanes Camera::GetFrustumPlanes() const {
                           camera_axes.up * (far_height / 2.0);
 
   return FrustumPlanes{
-      .near = {near_down_left, near_down_right, near_up_right},
-      .far = {far_up_right, far_down_right, far_down_left},
+      .near = {near_up_right, near_down_right, near_down_left},
+      .far = {far_down_left, far_down_right, far_up_right},
       .up = {far_up_right, near_up_right, near_up_left},
       .down = {far_down_right, near_down_left, near_down_right},
       .left = {far_down_left, near_up_left, near_down_left},

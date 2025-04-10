@@ -29,6 +29,8 @@ class Camera {
   using TransformMatrix4x4 = Linear::TransformMatrix4x4;
 
 public:
+  Camera() = default;
+
   explicit Camera(const Point4& position, const ElemType aspect_ratio,
                   const ElemType near_distance, const ElemType far_distance,
                   const ElemType fov, const ElemType pitch, const ElemType yaw);

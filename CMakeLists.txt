@@ -29,6 +29,8 @@ add_subdirectory(MathUtils)
 target_link_libraries(${PROJECT_NAME} PRIVATE MathUtils)
 add_subdirectory(Object)
 target_link_libraries(${PROJECT_NAME} PRIVATE Object)
+add_subdirectory(Renderer)
+target_link_libraries(${PROJECT_NAME} PRIVATE Renderer)
 add_subdirectory(Core)
 target_link_libraries(${PROJECT_NAME} PRIVATE Core)
 
