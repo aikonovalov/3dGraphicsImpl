@@ -53,18 +53,17 @@ public:
                            ElemType diffuse = kDEFAULT_DIFFUSE);
 
   void DrawPixel(const WindowSize& window_size, ScreenPicture& pixels,
-                 ScreenPicture& z_buffer, const ScreenPoint& location,
-                 Color color);
+                 ZBuffer& z_buffer, const ScreenPoint& location, Color color);
 
   void DrawLine(const ScreenPoint& begin, const ScreenPoint& end,
                 const WindowSize& window_size, ScreenPicture& pixels,
-                ScreenPicture& z_buffer, Color color);
+                ZBuffer& z_buffer, Color color);
 
   void DrawBorder(const Triangle& triangle, const WindowSize& window_size,
-                  ScreenPicture& pixels, ScreenPicture& z_buffer, Color color);
+                  ScreenPicture& pixels, ZBuffer& z_buffer, Color color);
 
   void RasterizeTriangle(Triangle& triangle, WindowSize window_size,
-                         ScreenPicture& pixels, ScreenPicture& z_buffer);
+                         ScreenPicture& pixels, ZBuffer& z_buffer);
 
   ScreenPicture RenderScene(const std::vector<Object>& objects, Camera& camera,
                             WindowSize window_size);

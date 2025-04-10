@@ -45,8 +45,8 @@ void Renderer::DrawPixel(const WindowSize& window_size, ScreenPicture& pixels,
                          Color color) {
   if (location.x >= 0 && location.x < window_size.width && location.y >= 0 &&
       location.y < window_size.height) {
-    if (z_buffer[location.y * window_size.width + location.x] >=
-        location.depth) {
+    if (location.depth <=
+        z_buffer[location.y * window_size.width + location.x]) {
       pixels[location.y * window_size.width + location.x] = color;
       z_buffer[location.y * window_size.width + location.x] = location.depth;
     }
@@ -127,7 +127,7 @@ void Renderer::DrawBorder(const Triangle& triangle,
 void Renderer::RasterizeTriangle(Triangle& triangle, WindowSize window_size,
                                  ScreenPicture& pixels, ZBuffer& z_buffer) {
   for (Index i = 0; i < 3; ++i) {
-    triangle(i) = triangle(i) * (1.0 / static_cast<double>(triangle(i)(3)));
+    triangle(i) = triangle(i) * (1.0 / triangle(i)(3));
     triangle(i)(0) = ConvertToScreenX(window_size, triangle(i)(0));
     triangle(i)(1) = ConvertToScreenY(window_size, triangle(i)(1));
   }
@@ -156,7 +156,6 @@ void Renderer::RasterizeTriangle(Triangle& triangle, WindowSize window_size,
       }
     }
   }
-  DrawBorder(triangle, window_size, pixels, z_buffer, kBORDER_COLOR);
 }
 
 Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
@@ -173,9 +172,11 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
     // Clipping
     std::queue<Linear::Triangle> clipping_pool;
     for (auto index = 0; index < object.GetTrianglesCount(); ++index) {
-      if (frustum_planes.near.IsTriangleFaceTo(object.GetTriangle(index))) {
-        clipping_pool.push(object.GetTriangle(index));
-      }
+      Triangle triangle = object.GetTriangle(index);
+      triangle.OffsetCoords(camera.GetPosition() - object.GetPosition());
+      // if (frustum_planes.near.IsTriangleFaceTo(triangle)) {
+      clipping_pool.push(triangle);
+      // }
     }
 
     frustum_planes.near.ClipThrough(clipping_pool);
@@ -186,8 +187,6 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
 
     frustum_planes.left.ClipThrough(clipping_pool);
     frustum_planes.right.ClipThrough(clipping_pool);
-
-    std::cout << clipping_pool.size() << "\n";
 
     // Frustum apply
     std::vector<Linear::Triangle> frustumed_triangles;
@@ -201,6 +200,9 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
     for (auto& triangle : frustumed_triangles) {
       RasterizeTriangle(triangle, window_size, pixels, z_buf);
     }
+    for (auto& triangle : frustumed_triangles) {
+      DrawBorder(triangle, window_size, pixels, z_buf, kBORDER_COLOR);
+    }
   }
 
   return pixels;
@@ -208,13 +210,14 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
 
 Linear::Detail::Width Renderer::ConvertToScreenX(WindowSize window_size,
                                                  const Point4& point) {
-  return Width{static_cast<int>((point(0) + 1.0) * 0.5 * window_size.width)};
+  return Width{
+      static_cast<int>((point(0) + 1.0) * 0.5 * (window_size.width - 1))};
 };
 
 Linear::Detail::Height Renderer::ConvertToScreenY(WindowSize window_size,
                                                   const Point4& point) {
-  return Height{
-      static_cast<int>((1.0 - (point(1) + 1.0) * 0.5) * window_size.height)};
+  return Height{static_cast<int>((1.0 - (point(1) + 1.0) * 0.5) *
+                                 (window_size.height - 1))};
 };
 
 Linear::OffsetedVector Renderer::GetBoundingBoxBorders(const Triangle& triangle,
