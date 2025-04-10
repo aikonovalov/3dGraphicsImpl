@@ -29,11 +29,12 @@ public:
   using WindowSize = Detail::WindowSize;
   using Observable = Detail::Observable<ScreenPicture, WindowSize>;
   using Observer = Detail::Observer<ScreenPicture, WindowSize>;
+  using Index = Linear::Index;
 
   explicit Model(QObject* parent = nullptr);
+  Object& operator()(Index);
 
-  enum Index : int;
-  Object operator()(Index);
+  Index GetObjectsCount() const;
 
 private:
   Renderer renderer_;
