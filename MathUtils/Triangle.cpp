@@ -1,5 +1,6 @@
 #include "Triangle.h"
 #include <cassert>
+#include <cstdlib>
 #include "Matrix.h"
 #include "Point4.h"
 
@@ -17,6 +18,11 @@ Triangle::Triangle(const Point4& a, const Point4& b, const Point4& c)
          "To make triangle, his vertices must not lay on one straight line");
 }
 
+Point4& Triangle::operator()(Index index) {
+  assert(index > 0 && index < 3 && "Index must be an integer from 0 to 2");
+  return points_[index];
+}
+
 Point4 Triangle::operator()(Index index) const {
   assert(index > 0 && index < 3 && "Index must be an integer from 0 to 2");
   return points_[index];
@@ -28,6 +34,11 @@ Point4 Triangle::GetNormal() const {
 
   Point4 n = CrossProduct(vec1, vec2);
   return Normalize(n);
+}
+
+ElemType Triangle::GetAreaXYProjection() const {
+  return ((*this)(1)(0) - (*this)(0)(0)) * ((*this)(2)(1) - (*this)(0)(1)) -
+         ((*this)(1)(1) - (*this)(0)(1)) * ((*this)(2)(0) - (*this)(0)(0));
 }
 
 void Triangle::Transform(const TransformMatrix4x4& transform_matrix) {

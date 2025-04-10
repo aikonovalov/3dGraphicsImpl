@@ -48,6 +48,7 @@ void Plane::ClipThrough(std::queue<Linear::Triangle>& clip_pool) {
   for (size_t i = 0; i < pool_size; ++i) {
     Linear::Triangle curr = clip_pool.front();
     clip_pool.pop();
+
     ElemType dist0 = GetDistance(curr(0));
     ElemType dist1 = GetDistance(curr(1));
     ElemType dist2 = GetDistance(curr(2));
@@ -56,6 +57,7 @@ void Plane::ClipThrough(std::queue<Linear::Triangle>& clip_pool) {
       continue;
     } else if (dist0 >= 0 && dist1 >= 0 && dist2 >= 0) {
       clip_pool.push(curr);
+      continue;
     }
 
     IntersectionResult intersect_01 =
@@ -67,30 +69,33 @@ void Plane::ClipThrough(std::queue<Linear::Triangle>& clip_pool) {
 
     if (dist0 <= 0) {
       if (dist1 <= 0) {
+        // Vertices 0 and 1 outside of S+, only 2 in S+
         clip_pool.emplace(intersect_20.intersection, intersect_12.intersection,
                           curr(2));
       } else if (dist2 <= 0) {
-        // dist1 > 0
+        // Vertices 0 and 2 outside of S+, only 1 in S+
         clip_pool.emplace(intersect_01.intersection, intersect_12.intersection,
                           curr(2));
       } else {
-        // dist1 > 0 && dist2 > 0
+        // Vertex 0 is outside of S+, and 1 and 2 are in S+
         clip_pool.emplace(intersect_01.intersection, curr(1), curr(2));
         clip_pool.emplace(intersect_01.intersection, curr(2),
                           intersect_20.intersection);
       }
     } else if (dist1 <= 0) {
-      // dist0 > 0
+      // Vertex 1 is outside of S+, and 0 is in S+
       if (dist2 <= 0) {
+        // Only 0 in S+
         clip_pool.emplace(curr(0), intersect_01.intersection,
                           intersect_20.intersection);
       } else {
+        // Vertices 0 and 2 in S+, vertex 1 outside S+
         clip_pool.emplace(curr(0), intersect_01.intersection,
                           intersect_12.intersection);
         clip_pool.emplace(curr(0), intersect_12.intersection, curr(2));
       }
     } else {
-      // dist0 > 0 && dist1 > 0
+      // Vertices 0 and 1 are in S+, and 2 are outside S+
       clip_pool.emplace(curr(0), curr(1), intersect_12.intersection);
       clip_pool.emplace(curr(0), intersect_12.intersection,
                         intersect_20.intersection);

@@ -12,9 +12,13 @@ public:
   Triangle(const Point4&, const Point4&, const Point4&);
   Triangle(const Matrix<Detail::Height{4}, Detail::Width{3}>&);
 
+  Point4& operator()(Index index);
+
   Point4 operator()(Index index) const;
 
   Point4 GetNormal() const;
+
+  ElemType GetAreaXYProjection() const;
 
   void Transform(const TransformMatrix4x4&);
 
