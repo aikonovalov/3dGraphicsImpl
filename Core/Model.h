@@ -1,35 +1,45 @@
 #pragma once
 
 #include <QObject>
+#include <list>
 #include <vector>
 #include "../Detail/Observer.h"
-#include "../Object/Camera.h"
-#include "../Object/Object.h"
-#include "ViewBase.h"
+#include "../Detail/Palette.h"
+#include "../Renderer/Renderer.h"
+#include "Controller.h"
 
 namespace Core {
+
+class Controller;
 
 class Model : public QObject {
   Q_OBJECT
 
+  friend Controller;
+
 public:
   using Object = Scene::Object;
+  using Renderer = Rendering::Renderer;
   using Camera = Scene::Camera;
-  using Observable = Detail::Observable<ViewBase>;
-  using Observer = Detail::Observer<ViewBase>;
+
+  using Objects = std::vector<Object>;
+  using Cameras = std::vector<Camera>;
+
+  using ScreenPicture = Detail::ScreenPicture;
+  using WindowSize = Detail::WindowSize;
+  using Observable = Detail::Observable<ScreenPicture, WindowSize>;
+  using Observer = Detail::Observer<ScreenPicture, WindowSize>;
 
   explicit Model(QObject* parent = nullptr);
 
   enum Index : int;
-  Object GetObject(Index) const;
-
-  void AddObject(const Object&);
-
-  void AddView(Observer&);
+  Object operator()(Index);
 
 private:
-  std::vector<Object> objects_;
-  // Camera camera_;
+  Renderer renderer_;
+  Objects objects_;
+  Camera camera_;
+
   Observable port_;
 };
 

@@ -4,7 +4,12 @@ target_include_directories(CoreHeaders INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(Core
     Model.cpp
     View.cpp
+    Controller.cpp
 )
+
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 target_link_libraries(Core PRIVATE CoreHeaders)
 
