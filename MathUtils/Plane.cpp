@@ -34,6 +34,10 @@ IntersectionResult Plane::GetIntersectWithVector(const OffsetedVector& vector) {
   return IntersectionResult{.has_intersection = true, .intersection = result};
 }
 
+bool Plane::IsTriangleFaceTo(const Triangle& triangle) {
+  return DotProduct(triangle.GetNormal(), normal_) < 0;
+}
+
 void Plane::ClipThrough(std::queue<Linear::Triangle>& clip_pool) {
   //  The method accepts a std::queue of triangles and performs clipping through the plane.
   //  The plane divides space into two half-spaces: S+ (where the dot product of any vector with the plane normal

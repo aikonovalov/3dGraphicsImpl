@@ -28,6 +28,7 @@ public:
 
   ElemType GetDistance(const Point4& point);
   IntersectionResult GetIntersectWithVector(const OffsetedVector& vector);
+  bool IsTriangleFaceTo(const Triangle& triangle);
 
   void ClipThrough(std::queue<Linear::Triangle>& clip_pool);
 

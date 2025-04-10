@@ -99,16 +99,28 @@ void Renderer::DrawLine(const ScreenPoint& begin, const ScreenPoint& end,
 void Renderer::DrawBorder(const Triangle& triangle,
                           const WindowSize& window_size, ScreenPicture& pixels,
                           ZBuffer& z_buffer, Color color) {
-  DrawLine({.x = Width{int(triangle(0)(0))}, .y = Height{int(triangle(0)(1))}},
-           {.x = Width{int(triangle(1)(0))}, .y = Height{int(triangle(1)(1))}},
+  DrawLine({.x = Width{int(triangle(0)(0))},
+            .y = Height{int(triangle(0)(1))},
+            .depth = triangle(0)(2)},
+           {.x = Width{int(triangle(1)(0))},
+            .y = Height{int(triangle(1)(1))},
+            .depth = triangle(1)(2)},
            window_size, pixels, z_buffer, kBORDER_COLOR);
 
-  DrawLine({.x = Width{int(triangle(1)(0))}, .y = Height{int(triangle(1)(1))}},
-           {.x = Width{int(triangle(2)(0))}, .y = Height{int(triangle(2)(1))}},
+  DrawLine({.x = Width{int(triangle(1)(0))},
+            .y = Height{int(triangle(1)(1))},
+            .depth = triangle(1)(2)},
+           {.x = Width{int(triangle(2)(0))},
+            .y = Height{int(triangle(2)(1))},
+            .depth = triangle(2)(2)},
            window_size, pixels, z_buffer, kBORDER_COLOR);
 
-  DrawLine({.x = Width{int(triangle(2)(0))}, .y = Height{int(triangle(2)(1))}},
-           {.x = Width{int(triangle(0)(0))}, .y = Height{int(triangle(0)(1))}},
+  DrawLine({.x = Width{int(triangle(2)(0))},
+            .y = Height{int(triangle(2)(1))},
+            .depth = triangle(2)(2)},
+           {.x = Width{int(triangle(0)(0))},
+            .y = Height{int(triangle(0)(1))},
+            .depth = triangle(0)(2)},
            window_size, pixels, z_buffer, kBORDER_COLOR);
 }
 
@@ -161,7 +173,9 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
     // Clipping
     std::queue<Linear::Triangle> clipping_pool;
     for (auto index = 0; index < object.GetTrianglesCount(); ++index) {
-      clipping_pool.push(object.GetTriangle(index));
+      if (frustum_planes.near.IsTriangleFaceTo(object.GetTriangle(index))) {
+        clipping_pool.push(object.GetTriangle(index));
+      }
     }
 
     frustum_planes.near.ClipThrough(clipping_pool);
