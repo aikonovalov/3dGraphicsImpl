@@ -8,15 +8,15 @@
 
 namespace Detail {
 
-template <class T>
+template <class Data, typename ID_Data>
 class Observer;
 
-template <class T>
+template <class Data, typename ID_Data>
 class Observable;
 
-template <class T>
+template <class Data, typename ID_Data>
 class Observer {
-  using Observable = Observable<T>;
+  using Observable = Observable<Data, ID_Data>;
   friend Observable;
 
 public:
@@ -33,7 +33,7 @@ public:
     return observable_;
   }
 
-  void SetNotifyAction(std::function<void()>&& new_func) {
+  void SetNotifyAction(std::function<void(Data&)>&& new_func) {
     notify_action_ = std::move(new_func);
   }
 
@@ -47,12 +47,12 @@ private:
   }
 
   Observable* observable_;
-  std::function<void()> notify_action_;
+  std::function<void(Data&)> notify_action_;
 };
 
-template <class T>
+template <class Data, typename ID_Data>
 class Observable {
-  using Observer = Observer<T>;
+  using Observer = Observer<Data, ID_Data>;
   friend Observer;
 
 public:
@@ -63,33 +63,67 @@ public:
   Observable(Observable&&) noexcept = delete;
   Observable& operator=(Observable&&) noexcept = delete;
 
-  void SubscribeObserver(Observer& observer) {
+  void SubscribeObserver(Observer& observer, ID_Data data) {
     if (observer.IsSubscribed()) {
-
       observer.Unsubscribe();
     }
-    observers_.push_back(&observer);
+    observers_.push_back({&observer, data});
     observer.attach_(this);
   }
 
-  void NotifyAll() const {
+  void NotifyAll(Data& data) const {
     for (auto it : observers_) {
-      it->notify_action_();
+      it->first.notify_action_(data);
+    }
+  }
+
+  void NotifyOne(Observer* observer, Data& data) {
+
+    for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+      if (it->first == observer) {
+        it->first->notify_action_(data);
+        return;
+      }
+    }
+  }
+
+  std::list<std::pair<Observer*, ID_Data>>& GetObserversList() {
+    return observers_;
+  }
+
+  ID_Data GetDataByID(Observer* observer) {
+    for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+      if (it->first == observer) {
+        observers_.erase(it);
+      }
+    }
+  }
+
+  void SetDataByID(Observer* observer, ID_Data new_data) {
+    for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+      if (it->first == observer) {
+        it->second = new_data;
+      }
     }
   }
 
   ~Observable() {
     while (!observers_.empty()) {
-      observers_.front()->Unsubscribe();
+      observers_.front().first->Unsubscribe();
     }
   }
 
 private:
   void detach_(Observer* observer) {
-    observers_.remove(observer);
+    for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+      if (it->first == observer) {
+        observers_.erase(it);
+        return;
+      }
+    }
   }
 
-  std::list<Observer*> observers_;
+  std::list<std::pair<Observer*, ID_Data>> observers_;
 };
 
 }  // namespace Detail
