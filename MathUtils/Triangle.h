@@ -20,6 +20,8 @@ public:
 
   ElemType GetAreaXYProjection() const;
 
+  void OffsetCoords(const Point4& offset);
+
   void Transform(const TransformMatrix4x4&);
 
 private:

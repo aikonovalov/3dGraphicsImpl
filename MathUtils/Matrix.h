@@ -312,6 +312,27 @@ public:
     return result;
   }
 
+  static Matrix<Height{4}, Width{4}> MakeRotationX(ElemType angle)
+    requires(GetHeight() == 4 && GetWidth() == 4)
+  {
+    std::array<ElemType, 4> axis = {1, 0, 0, 0};
+    return MakeRotation(axis, angle);
+  }
+
+  static Matrix<Height{4}, Width{4}> MakeRotationY(ElemType angle)
+    requires(GetHeight() == 4 && GetWidth() == 4)
+  {
+    std::array<ElemType, 4> axis = {0, 1, 0, 0};
+    return MakeRotation(axis, angle);
+  }
+
+  static Matrix<Height{4}, Width{4}> MakeRotationZ(ElemType angle)
+    requires(GetHeight() == 4 && GetWidth() == 4)
+  {
+    std::array<ElemType, 4> axis = {0, 0, 1, 0};
+    return MakeRotation(axis, angle);
+  }
+
 protected:
   template <int Length>
   static constexpr std::array<ElemType, Length> FillMatrix(ElemType elem) {

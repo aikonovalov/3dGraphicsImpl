@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <queue>
+#include "Matrix.h"
 #include "Point4.h"
 #include "Triangle.h"
 
@@ -36,6 +37,8 @@ public:
                  ElemType new_shift);
 
 private:
+  static constexpr ElemType kEPS = 1e-6;
+
   Point4 normal_;
   ElemType shift_;
 };

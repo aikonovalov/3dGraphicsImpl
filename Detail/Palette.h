@@ -7,7 +7,7 @@
 namespace Detail {
 
 using Color = uint32_t;
-using ZDepth = uint32_t;
+using ZDepth = Linear::ElemType;
 using ScreenPicture = std::vector<Color>;
 using ZBuffer = std::vector<ZDepth>;
 

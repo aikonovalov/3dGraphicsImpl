@@ -35,7 +35,7 @@ IntersectionResult Plane::GetIntersectWithVector(const OffsetedVector& vector) {
 }
 
 bool Plane::IsTriangleFaceTo(const Triangle& triangle) {
-  return DotProduct(triangle.GetNormal(), normal_) < 0;
+  return DotProduct(triangle.GetNormal(), normal_) <= -kEPS;
 }
 
 void Plane::ClipThrough(std::queue<Linear::Triangle>& clip_pool) {
