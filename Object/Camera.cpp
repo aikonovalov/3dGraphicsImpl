@@ -16,19 +16,19 @@ Camera::Camera(const Point4& position, const ElemType aspect_ratio,
 }
 
 Linear::TransformMatrix4x4 Camera::GetAlignedFrustumMatrix() const {
-  const ElemType half_fov_tangens = std::tan(GetFOV() / 2);
+  const ElemType tanHalfFov = std::tan(GetFOV() / 2.0);
 
-  Linear::TransformMatrix4x4 aligned_frustum_matrix =
-      Linear::TransformMatrix4x4::Eye();
-  aligned_frustum_matrix(0, 0) = 1.0 / (GetAspectRatio() * half_fov_tangens);
-  aligned_frustum_matrix(1, 1) = 1.0 / half_fov_tangens;
-  aligned_frustum_matrix(2, 2) = -(GetFarDistance() + GetNearDistance()) /
-                                 (GetFarDistance() - GetNearDistance());
-  aligned_frustum_matrix(2, 3) = -(2.0 * GetFarDistance() * GetNearDistance()) /
-                                 (GetFarDistance() - GetNearDistance());
-  aligned_frustum_matrix(3, 2) = -1.0;
+  Linear::TransformMatrix4x4 proj = Linear::TransformMatrix4x4::Eye();
 
-  return aligned_frustum_matrix;
+  proj(0, 0) = 1.0 / (GetAspectRatio() * tanHalfFov);
+  proj(1, 1) = 1.0 / (tanHalfFov);
+  proj(2, 2) = GetFarDistance() / (GetFarDistance() - GetNearDistance());
+  proj(2, 3) = -(GetFarDistance() * GetNearDistance()) /
+               (GetFarDistance() - GetNearDistance());
+  proj(3, 2) = 1.0;
+  proj(3, 3) = 0.0;
+
+  return proj;
 }
 
 Linear::TransformMatrix4x4 Camera::GetViewDirectionMatrix() const {

@@ -36,7 +36,6 @@ class Renderer {
   using Width = Linear::Detail::Width;
   using Index = Linear::Index;
 
-  using Model = Core::Model;
   using WindowSize = Detail::WindowSize;
 
 public:
