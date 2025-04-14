@@ -4,7 +4,6 @@
 #include <queue>
 #include "Matrix.h"
 #include "Point4.h"
-#include "Triangle.h"
 
 namespace Linear {
 
@@ -27,11 +26,8 @@ public:
   Plane(const Point4& normal, ElemType shift);
   Plane(const Point4& point1, const Point4& point2, const Point4& point3);
 
-  ElemType GetDistance(const Point4& point);
-  IntersectionResult GetIntersectWithVector(const OffsetedVector& vector);
-  bool IsTriangleFaceTo(const Triangle& triangle);
-
-  void ClipThrough(std::queue<Linear::Triangle>& clip_pool);
+  ElemType GetDistance(const Point4& point) const;
+  IntersectionResult GetIntersectWithVector(const OffsetedVector& vector) const;
 
   void Transform(const TransformMatrix4x4& transform_matrix,
                  ElemType new_shift);
