@@ -21,9 +21,11 @@ public:
   using Object = Scene::Object;
   using Renderer = Rendering::Renderer;
   using Camera = Scene::Camera;
+  using Light = Detail::Light;
 
   using Objects = std::vector<Object>;
   using Cameras = std::vector<Camera>;
+  using Lights = Detail::Lights;
 
   using ScreenPicture = Detail::ScreenPicture;
   using WindowSize = Detail::WindowSize;
@@ -39,6 +41,7 @@ public:
 private:
   Renderer renderer_;
   Objects objects_;
+  Lights lights_;
   Camera camera_;
 
   Observable port_;

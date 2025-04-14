@@ -8,176 +8,151 @@ namespace Core {
 
 View::View(Controller* controller_link)
     : port_(), controller_(controller_link) {
-  QWidget* centralWidget = new QWidget(this);
-  QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
+  QWidget* central_widget = new QWidget(this);
+  QHBoxLayout* main_layout = new QHBoxLayout(central_widget);
 
-  label_ = new QLabel(centralWidget);
+  label_ = new QLabel(central_widget);
   label_->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
   label_->setScaledContents(true);
-  mainLayout->addWidget(label_, 1);
+  main_layout->addWidget(label_, 1);
 
-  controlPanel_ = new QWidget(centralWidget);
-  QVBoxLayout* panelLayout = new QVBoxLayout(controlPanel_);
+  control_panel_ = new QWidget(central_widget);
+  QVBoxLayout* panel_layout = new QVBoxLayout(control_panel_);
+  main_layout->addWidget(control_panel_);
 
-  QHBoxLayout* objTransLayout = new QHBoxLayout();
-  QPushButton* btnObjUp = new QPushButton("Объект вверх", controlPanel_);
-  QPushButton* btnObjDown = new QPushButton("Объект вниз", controlPanel_);
-  QPushButton* btnObjLeft = new QPushButton("Объект влево", controlPanel_);
-  QPushButton* btnObjRight = new QPushButton("Объект вправо", controlPanel_);
-  QPushButton* btnObjForward = new QPushButton("Объект вперёд", controlPanel_);
-  QPushButton* btnObjBackward = new QPushButton("Объект назад", controlPanel_);
-  objTransLayout->addWidget(btnObjUp);
-  objTransLayout->addWidget(btnObjDown);
-  objTransLayout->addWidget(btnObjLeft);
-  objTransLayout->addWidget(btnObjRight);
-  objTransLayout->addWidget(btnObjForward);
-  objTransLayout->addWidget(btnObjBackward);
-  panelLayout->addLayout(objTransLayout);
+  auto configureButton = [](QPushButton* button) {
+    button->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    button->setMaximumHeight(30);
+  };
 
-  QHBoxLayout* camTransLayout = new QHBoxLayout();
-  QPushButton* btnCamUp = new QPushButton("Камера вверх", controlPanel_);
-  QPushButton* btnCamDown = new QPushButton("Камера вниз", controlPanel_);
-  QPushButton* btnCamLeft = new QPushButton("Камера влево", controlPanel_);
-  QPushButton* btnCamRight = new QPushButton("Камера вправо", controlPanel_);
-  QPushButton* btnCamForward = new QPushButton("Камера вперёд", controlPanel_);
-  QPushButton* btnCamBackward = new QPushButton("Камера назад", controlPanel_);
-  camTransLayout->addWidget(btnCamUp);
-  camTransLayout->addWidget(btnCamDown);
-  camTransLayout->addWidget(btnCamLeft);
-  camTransLayout->addWidget(btnCamRight);
-  camTransLayout->addWidget(btnCamForward);
-  camTransLayout->addWidget(btnCamBackward);
-  panelLayout->addLayout(camTransLayout);
+  auto addButtonRow = [&](std::initializer_list<QPushButton*> buttons) {
+    QHBoxLayout* layout = new QHBoxLayout();
+    for (auto* btn : buttons) {
+      configureButton(btn);
+      layout->addWidget(btn);
+    }
+    panel_layout->addLayout(layout);
+  };
 
-  QHBoxLayout* objRotLayout = new QHBoxLayout();
-  QPushButton* btnObjRotXPlus = new QPushButton("Объект рот X+", controlPanel_);
-  QPushButton* btnObjRotXMinus =
-      new QPushButton("Объект рот X-", controlPanel_);
-  QPushButton* btnObjRotYPlus = new QPushButton("Объект рот Y+", controlPanel_);
-  QPushButton* btnObjRotYMinus =
-      new QPushButton("Объект рот Y-", controlPanel_);
-  QPushButton* btnObjRotZPlus = new QPushButton("Объект рот Z+", controlPanel_);
-  QPushButton* btnObjRotZMinus =
-      new QPushButton("Объект рот Z-", controlPanel_);
-  objRotLayout->addWidget(btnObjRotXPlus);
-  objRotLayout->addWidget(btnObjRotXMinus);
-  objRotLayout->addWidget(btnObjRotYPlus);
-  objRotLayout->addWidget(btnObjRotYMinus);
-  objRotLayout->addWidget(btnObjRotZPlus);
-  objRotLayout->addWidget(btnObjRotZMinus);
-  panelLayout->addLayout(objRotLayout);
+  QPushButton *btnObjUp = new QPushButton("Object move up"),
+              *btnObjDown = new QPushButton("Object move down"),
+              *btnObjLeft = new QPushButton("Object move left"),
+              *btnObjRight = new QPushButton("Object move right"),
+              *btnObjForward = new QPushButton("Object move forw"),
+              *btnObjBackward = new QPushButton("Object move back");
+  addButtonRow({btnObjUp, btnObjDown});
+  addButtonRow({btnObjLeft, btnObjRight});
+  addButtonRow({btnObjForward, btnObjBackward});
 
-  // ----- Группа кнопок для вращения камеры -----
-  QHBoxLayout* camRotLayout = new QHBoxLayout();
-  QPushButton* btnCamRotXPlus =
-      new QPushButton("Камера рот гор+", controlPanel_);
-  QPushButton* btnCamRotXMinus =
-      new QPushButton("Камера рот гор-", controlPanel_);
-  QPushButton* btnCamRotYPlus =
-      new QPushButton("Камера рот верт+", controlPanel_);
-  QPushButton* btnCamRotYMinus =
-      new QPushButton("Камера рот верт-", controlPanel_);
-  camRotLayout->addWidget(btnCamRotXPlus);
-  camRotLayout->addWidget(btnCamRotXMinus);
-  camRotLayout->addWidget(btnCamRotYPlus);
-  camRotLayout->addWidget(btnCamRotYMinus);
+  QPushButton *btnCamUp = new QPushButton("Camera move up"),
+              *btnCamDown = new QPushButton("Camera move down"),
+              *btnCamLeft = new QPushButton("Camera move left"),
+              *btnCamRight = new QPushButton("Camera move right"),
+              *btnCamForward = new QPushButton("Camera move forw"),
+              *btnCamBackward = new QPushButton("Camera move backw");
+  addButtonRow({btnCamUp, btnCamDown});
+  addButtonRow({btnCamLeft, btnCamRight});
+  addButtonRow({btnCamForward, btnCamBackward});
 
-  panelLayout->addLayout(camRotLayout);
+  QPushButton *btnObjRotXPlus = new QPushButton("Object rot aX+"),
+              *btnObjRotXMinus = new QPushButton("Object rot aX-"),
+              *btnObjRotYPlus = new QPushButton("Object rot aY+"),
+              *btnObjRotYMinus = new QPushButton("Object rot aY-"),
+              *btnObjRotZPlus = new QPushButton("Object rot aZ+"),
+              *btnObjRotZMinus = new QPushButton("Object rot aZ-");
+  addButtonRow({btnObjRotXPlus, btnObjRotXMinus});
+  addButtonRow({btnObjRotYPlus, btnObjRotYMinus});
+  addButtonRow({btnObjRotZPlus, btnObjRotZMinus});
 
-  mainLayout->addWidget(controlPanel_);
-  setCentralWidget(centralWidget);
+  QPushButton *btnCamRotXPlus = new QPushButton("Camera rotate up"),
+              *btnCamRotXMinus = new QPushButton("Camera rotate down"),
+              *btnCamRotYPlus = new QPushButton("Camera rotate left"),
+              *btnCamRotYMinus = new QPushButton("Camera rotate right");
+  addButtonRow({btnCamRotXPlus, btnCamRotXMinus});
+  addButtonRow({btnCamRotYPlus, btnCamRotYMinus});
+
+  QPushButton* btnLoadModel = new QPushButton("Load Model");
+  configureButton(btnLoadModel);
+  panel_layout->addWidget(btnLoadModel);
+
+  setCentralWidget(central_widget);
 
   constexpr ElemType moveStep = 1;
   constexpr ElemType rotStep = 0.1;
   const Index objectIndex = 0;
 
   connect(btnObjUp, &QPushButton::clicked, this,
-          [this, moveStep, objectIndex]() {
-            emit objectMoveRequested(objectIndex, 0, -moveStep, 0);
-          });
+          [=]() { emit objectMoveRequested(objectIndex, 0, -moveStep, 0); });
   connect(btnObjDown, &QPushButton::clicked, this,
-          [this, moveStep, objectIndex]() {
-            emit objectMoveRequested(objectIndex, 0, moveStep, 0);
-          });
+          [=]() { emit objectMoveRequested(objectIndex, 0, moveStep, 0); });
   connect(btnObjLeft, &QPushButton::clicked, this,
-          [this, moveStep, objectIndex]() {
-            emit objectMoveRequested(objectIndex, -moveStep, 0, 0);
-          });
+          [=]() { emit objectMoveRequested(objectIndex, -moveStep, 0, 0); });
   connect(btnObjRight, &QPushButton::clicked, this,
-          [this, moveStep, objectIndex]() {
-            emit objectMoveRequested(objectIndex, moveStep, 0, 0);
-          });
+          [=]() { emit objectMoveRequested(objectIndex, moveStep, 0, 0); });
   connect(btnObjForward, &QPushButton::clicked, this,
-          [this, moveStep, objectIndex]() {
-            emit objectMoveRequested(objectIndex, 0, 0, moveStep);
-          });
+          [=]() { emit objectMoveRequested(objectIndex, 0, 0, moveStep); });
   connect(btnObjBackward, &QPushButton::clicked, this,
-          [this, moveStep, objectIndex]() {
-            emit objectMoveRequested(objectIndex, 0, 0, -moveStep);
-          });
+          [=]() { emit objectMoveRequested(objectIndex, 0, 0, -moveStep); });
 
   connect(btnCamUp, &QPushButton::clicked, this,
-          [this, moveStep]() { emit cameraMoveRequested(0, -moveStep, 0); });
+          [=]() { emit cameraMoveRequested(0, -moveStep, 0); });
   connect(btnCamDown, &QPushButton::clicked, this,
-          [this, moveStep]() { emit cameraMoveRequested(0, moveStep, 0); });
+          [=]() { emit cameraMoveRequested(0, moveStep, 0); });
   connect(btnCamLeft, &QPushButton::clicked, this,
-          [this, moveStep]() { emit cameraMoveRequested(-moveStep, 0, 0); });
+          [=]() { emit cameraMoveRequested(-moveStep, 0, 0); });
   connect(btnCamRight, &QPushButton::clicked, this,
-          [this, moveStep]() { emit cameraMoveRequested(moveStep, 0, 0); });
+          [=]() { emit cameraMoveRequested(moveStep, 0, 0); });
   connect(btnCamForward, &QPushButton::clicked, this,
-          [this, moveStep]() { emit cameraMoveRequested(0, 0, moveStep); });
+          [=]() { emit cameraMoveRequested(0, 0, moveStep); });
   connect(btnCamBackward, &QPushButton::clicked, this,
-          [this, moveStep]() { emit cameraMoveRequested(0, 0, -moveStep); });
+          [=]() { emit cameraMoveRequested(0, 0, -moveStep); });
 
   connect(btnObjRotXPlus, &QPushButton::clicked, this,
-          [this, rotStep, objectIndex]() {
-            emit objectRotateRequested(objectIndex, rotStep, 0, 0);
-          });
+          [=]() { emit objectRotateRequested(objectIndex, rotStep, 0, 0); });
   connect(btnObjRotXMinus, &QPushButton::clicked, this,
-          [this, rotStep, objectIndex]() {
-            emit objectRotateRequested(objectIndex, -rotStep, 0, 0);
-          });
+          [=]() { emit objectRotateRequested(objectIndex, -rotStep, 0, 0); });
   connect(btnObjRotYPlus, &QPushButton::clicked, this,
-          [this, rotStep, objectIndex]() {
-            emit objectRotateRequested(objectIndex, 0, rotStep, 0);
-          });
+          [=]() { emit objectRotateRequested(objectIndex, 0, rotStep, 0); });
   connect(btnObjRotYMinus, &QPushButton::clicked, this,
-          [this, rotStep, objectIndex]() {
-            emit objectRotateRequested(objectIndex, 0, -rotStep, 0);
-          });
+          [=]() { emit objectRotateRequested(objectIndex, 0, -rotStep, 0); });
   connect(btnObjRotZPlus, &QPushButton::clicked, this,
-          [this, rotStep, objectIndex]() {
-            emit objectRotateRequested(objectIndex, 0, 0, rotStep);
-          });
+          [=]() { emit objectRotateRequested(objectIndex, 0, 0, rotStep); });
   connect(btnObjRotZMinus, &QPushButton::clicked, this,
-          [this, rotStep, objectIndex]() {
-            emit objectRotateRequested(objectIndex, 0, 0, -rotStep);
-          });
+          [=]() { emit objectRotateRequested(objectIndex, 0, 0, -rotStep); });
 
   connect(btnCamRotXPlus, &QPushButton::clicked, this,
-          [this, rotStep]() { emit cameraRotateRequested(rotStep, 0, 0); });
+          [=]() { emit cameraRotateRequested(rotStep, 0, 0); });
   connect(btnCamRotXMinus, &QPushButton::clicked, this,
-          [this, rotStep]() { emit cameraRotateRequested(-rotStep, 0, 0); });
+          [=]() { emit cameraRotateRequested(-rotStep, 0, 0); });
   connect(btnCamRotYPlus, &QPushButton::clicked, this,
-          [this, rotStep]() { emit cameraRotateRequested(0, rotStep, 0); });
+          [=]() { emit cameraRotateRequested(0, rotStep, 0); });
   connect(btnCamRotYMinus, &QPushButton::clicked, this,
-          [this, rotStep]() { emit cameraRotateRequested(0, -rotStep, 0); });
+          [=]() { emit cameraRotateRequested(0, -rotStep, 0); });
 
-  connect(this,
-          SIGNAL(objectMoveRequested(Index, ElemType, ElemType, ElemType)),
-          controller_, SLOT(onMoveObject(Index, ElemType, ElemType, ElemType)));
-  connect(
-      this, SIGNAL(objectRotateRequested(Index, ElemType, ElemType, ElemType)),
-      controller_, SLOT(onRotateObject(Index, ElemType, ElemType, ElemType)));
-  connect(this, SIGNAL(cameraMoveRequested(ElemType, ElemType, ElemType)),
-          controller_, SLOT(onMoveCamera(ElemType, ElemType, ElemType)));
-  connect(this, SIGNAL(cameraRotateRequested(ElemType, ElemType, ElemType)),
-          controller_, SLOT(onRotateCamera(ElemType, ElemType)));
+  // Load model
+  connect(btnLoadModel, &QPushButton::clicked, this, [this]() {
+    QString fileName = QFileDialog::getOpenFileName(
+        this, tr("Load OBJ Model"), "", tr("OBJ Files (*.obj);;All Files (*)"));
+    if (!fileName.isEmpty()) {
+      qDebug() << "Loading model from:" << fileName;
+      emit modelLoadRequested(fileName);
+    }
+  });
+
+  connect(this, &View::objectMoveRequested, controller_,
+          &Controller::onMoveObject);
+  connect(this, &View::objectRotateRequested, controller_,
+          &Controller::onRotateObject);
+  connect(this, &View::cameraMoveRequested, controller_,
+          &Controller::onMoveCamera);
+  connect(this, &View::cameraRotateRequested, controller_,
+          &Controller::onRotateCamera);
+  connect(this, &View::modelLoadRequested, controller_,
+          &Controller::onModelLoad);
 
   port_.SetNotifyAction([this](ScreenPicture& data) { this->Draw(data); });
   controller_->AddView(port_, GetWindowSize());
   controller_->UpdateAll();
-
   show();
 }
 

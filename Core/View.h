@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QFileDialog>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QMainWindow>
 #include <QPixmap>
@@ -36,6 +38,7 @@ signals:
   void cameraMoveRequested(ElemType dx, ElemType dy, ElemType dz);
   void cameraRotateRequested(ElemType delta_pitch, ElemType delta_yaw,
                              ElemType dummy);
+  void modelLoadRequested(const QString& fileName);
 
 protected:
   void resizeEvent(QResizeEvent* event) override;
@@ -45,7 +48,7 @@ private:
   Controller* controller_;
   Observer port_;
 
-  QWidget* controlPanel_;
+  QWidget* control_panel_;
 };
 
 }  // namespace Core

@@ -1,4 +1,5 @@
 #include "Controller.h"
+#include "../Object/Parser.h"
 #include "Model.h"
 
 namespace Core {
@@ -14,6 +15,10 @@ void Controller::AddObject(Scene::Object& object) {
 void Controller::AddView(Observer& observer, WindowSize size) {
   model_link_->port_.SubscribeObserver(observer, size);
   UpdateAll();
+}
+
+void Controller::AddLight(const Light& new_light) {
+  model_link_->lights_.push_back(new_light);
 }
 
 void Controller::ResizeWindow(Observer* observer, WindowSize new_size) {
@@ -54,12 +59,7 @@ void Controller::onRotateObject(Index index, ElemType rx, ElemType ry,
 
     Object& object = (*model_link_)(index);
     for (Index i = 0; i < object.GetTrianglesCount(); ++i) {
-      Triangle tri = object.GetTriangle(i);
-      for (Index ind = 0; ind < 3; ++ind) {
-        tri(ind) = rotationMatrix * tri(ind);
-      }
-
-      object.SetTriangle(i, tri);
+      object(i).vertices.Transform(rotationMatrix);
     }
 
     UpdateAll();
@@ -76,10 +76,19 @@ void Controller::onRotateCamera(ElemType delta_pitch, ElemType delta_yaw) {
   UpdateAll();
 }
 
+void Controller::onModelLoad(const QString& fileName) {
+  std::string file_path = fileName.toStdString();
+  Scene::Object new_object = Scene::ObjParser::Parse(file_path);
+
+  AddObject(new_object);
+  UpdateAll();
+}
+
 void Controller::UpdateAll() {
   for (auto& elem : model_link_->port_.GetObserversList()) {
     ScreenPicture renderer_output = model_link_->renderer_.RenderScene(
-        model_link_->objects_, model_link_->camera_, elem.second);
+        model_link_->objects_, model_link_->camera_, model_link_->lights_,
+        elem.second);
     model_link_->port_.NotifyOne(elem.first, renderer_output);
   }
 }
