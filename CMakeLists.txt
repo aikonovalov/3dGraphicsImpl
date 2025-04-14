@@ -4,6 +4,7 @@ project(ThreeDEngine LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
 
 find_package(Catch2 3 REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui)
@@ -16,7 +17,6 @@ add_subdirectory(tests)
 
 
 qt_add_executable(${PROJECT_NAME} main.cpp)
-# add_executable(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/tests/Test/Matrix-test.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
