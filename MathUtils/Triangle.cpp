@@ -35,6 +35,15 @@ Point4 Triangle::GetNormal() const {
   return Normalize(n);
 }
 
+Point4 Triangle::GetPointByBarycentric(const Point4& barycentric_point) {
+  Point4 result_point;
+  for (Index i = 0; i < 3; ++i) {
+    result_point += barycentric_point(i) * points_[i];
+  }
+
+  return result_point;
+}
+
 ElemType Triangle::GetAreaXYProjection() const {
   return ((*this)(1)(0) - (*this)(0)(0)) * ((*this)(2)(1) - (*this)(0)(1)) -
          ((*this)(1)(1) - (*this)(0)(1)) * ((*this)(2)(0) - (*this)(0)(0));

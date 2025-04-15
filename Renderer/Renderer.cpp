@@ -30,21 +30,14 @@ Linear::Point4 Renderer::ComputeBarycentric(const Point4& point,
           area20 / triangle_area, 0};
 }
 
-Linear::ElemType Renderer::ComputeDepth(const TriangleData& triangle_data,
-                                        const Point4& barycentric_point) {
-  return triangle_data.vertices(0)(2) * barycentric_point(0) +
-         triangle_data.vertices(1)(2) * barycentric_point(1) +
-         triangle_data.vertices(2)(2) * barycentric_point(2);
-}
-
 double Renderer::ComputeLighting(const Point4& normal, const Point4& light_dir,
                                  double ambient, double diffuse) {
   double lambert = std::max(0.0, DotProduct(normal, light_dir));
   return ambient + diffuse * lambert;
 }
 
-void Renderer::ClipThrough(const Plane& plane,
-                           std::queue<TriangleData>& clip_pool) {
+void Renderer::ClipTrianglesThroughPlane(const Plane& plane,
+                                         std::queue<TriangleData>& clip_pool) {
   //  The method accepts a std::queue of triangles and performs clipping through the plane.
   //  The plane divides space into two half-spaces: S+ (where the dot product of any vector with the plane normal
   //  is non-negative) and S– (where it is negative). The method processes all triangles
@@ -111,9 +104,9 @@ void Renderer::ClipThrough(const Plane& plane,
       } else if (dist2 <= 0) {
         // Vertices 0 and 2 outside of S+, only 1 in S+
         clip_pool.push(
-            {{intersect_01, intersect_12, curr.vertices(2)},
-             {normal_01, normal_12, curr.normals(2)},
-             {texture_coords_01, texture_coords_12, curr.texture_coords(2)},
+            {{intersect_01, intersect_12, curr.vertices(1)},
+             {normal_01, normal_12, curr.normals(1)},
+             {texture_coords_01, texture_coords_12, curr.texture_coords(1)},
              curr.material,
              curr.texture});
       } else {
@@ -287,7 +280,8 @@ void Renderer::RasterizeTriangle(TriangleData& triangle_data,
           {ElemType(j), ElemType(i), 0, 0}, triangle_data, triangle_area);
       if (barycentric_point(0) >= -kEPS && barycentric_point(1) >= -kEPS &&
           barycentric_point(2) >= -kEPS) {
-        ElemType depth = ComputeDepth(triangle_data, barycentric_point);
+        ElemType depth =
+            triangle_data.vertices.GetPointByBarycentric(barycentric_point)(2);
         DrawPixel(window_size, pixels, z_buffer, {Height(i), Width(j), depth},
                   0xFFFFFF);
       }
@@ -316,14 +310,14 @@ Detail::ScreenPicture Renderer::RenderScene(const std::vector<Object>& objects,
       clipping_pool.push(triangle_data);
     }
 
-    ClipThrough(frustum_planes.near, clipping_pool);
-    ClipThrough(frustum_planes.far, clipping_pool);
+    ClipTrianglesThroughPlane(frustum_planes.near, clipping_pool);
+    ClipTrianglesThroughPlane(frustum_planes.far, clipping_pool);
 
-    ClipThrough(frustum_planes.up, clipping_pool);
-    ClipThrough(frustum_planes.down, clipping_pool);
+    ClipTrianglesThroughPlane(frustum_planes.up, clipping_pool);
+    ClipTrianglesThroughPlane(frustum_planes.down, clipping_pool);
 
-    ClipThrough(frustum_planes.left, clipping_pool);
-    ClipThrough(frustum_planes.right, clipping_pool);
+    ClipTrianglesThroughPlane(frustum_planes.left, clipping_pool);
+    ClipTrianglesThroughPlane(frustum_planes.right, clipping_pool);
 
     // Frustum apply
     std::vector<TriangleData> frustumed_triangles;

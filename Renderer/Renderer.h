@@ -53,14 +53,12 @@ public:
   Point4 ComputeBarycentric(const Point4& point, const TriangleData& triangle,
                             const ElemType& triangle_area);
 
-  ElemType ComputeDepth(const TriangleData& triangle,
-                        const Point4& barycentric_point);
-
   ElemType ComputeLighting(const Point4& normal, const Point4& light_dir,
                            ElemType ambient = kDEFAULT_AMBIENT,
                            ElemType diffuse = kDEFAULT_DIFFUSE);
 
-  void ClipThrough(const Plane& plane, std::queue<TriangleData>& triangle_pool);
+  void ClipTrianglesThroughPlane(const Plane& plane,
+                                 std::queue<TriangleData>& triangle_pool);
 
   void DrawPixel(const WindowSize& window_size, ScreenPicture& pixels,
                  ZBuffer& z_buffer, const ScreenPoint& location, Color color);

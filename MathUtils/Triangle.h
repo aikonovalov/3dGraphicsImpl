@@ -18,6 +18,8 @@ public:
 
   Point4 GetNormal() const;
 
+  Point4 GetPointByBarycentric(const Point4& barycentric_point);
+
   ElemType GetAreaXYProjection() const;
 
   void OffsetCoords(const Point4& offset);
