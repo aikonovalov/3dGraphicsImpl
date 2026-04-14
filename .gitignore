@@ -3,7 +3,6 @@ a.out
 .vscode/
 .clang-format
 build/
-main.cpp
 
 **/.DS_Store
 .idea/

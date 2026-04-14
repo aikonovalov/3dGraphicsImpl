@@ -1,7 +1,33 @@
 #include "Renderer.h"
 #include <algorithm>
+#include <cmath>
 #include <queue>
 #include <vector>
+
+namespace {
+
+using Linear::ElemType;
+
+ElemType EvalAffinePlane2D(ElemType x0, ElemType y0, ElemType q0, ElemType x1,
+                           ElemType y1, ElemType q1, ElemType x2, ElemType y2,
+                           ElemType q2, ElemType px, ElemType py) {
+  const ElemType dx1 = x1 - x0;
+  const ElemType dy1 = y1 - y0;
+  const ElemType dx2 = x2 - x0;
+  const ElemType dy2 = y2 - y0;
+  const ElemType dq1 = q1 - q0;
+  const ElemType dq2 = q2 - q0;
+  const ElemType det = dx1 * dy2 - dx2 * dy1;
+  if (std::abs(det) < 1e-40) {
+    return q0;
+  }
+  const ElemType a = (dq1 * dy2 - dq2 * dy1) / det;
+  const ElemType b = (dx1 * dq2 - dx2 * dq1) / det;
+  const ElemType c = q0 - a * x0 - b * y0;
+  return a * px + b * py + c;
+}
+
+}  // namespace
 
 namespace Rendering {
 
@@ -15,25 +41,32 @@ void Renderer::CameraRatioCheck(Camera& camera, WindowSize window_size) {
 
 bool Renderer::IsBackfaceCulled(const TriangleData& triangle,
                                 const Camera& camera) {
-  Point4 normal = triangle.vertices.GetNormal();
+  Point4 e1 = triangle.vertices(1) - triangle.vertices(0);
+  Point4 e2 = triangle.vertices(2) - triangle.vertices(0);
+
+  Point4 face_normal = Linear::CrossProduct(e1, e2);
+  ElemType len_sq = Linear::DotProduct(face_normal, face_normal);
+  if (len_sq < kEPS * kEPS) {
+    return true;
+  }
+
   Point4 vertex = triangle.vertices(0);
   Point4 view_vector = Linear::Normalize(camera.GetPosition() - vertex);
-
-  return Linear::DotProduct(normal, view_vector) < -kEPS;
+  return Linear::DotProduct(face_normal, view_vector) < -kEPS * std::sqrt(len_sq);
 }
 
 Linear::Point4 Renderer::ComputeBarycentric(const Point4& point,
                                             const Triangle& triangle,
                                             const ElemType& triangle_area) {
-  ElemType area01 =
+  const ElemType opp2 =
       Triangle{triangle(0), triangle(1), point}.GetAreaXYProjection();
-  ElemType area12 =
+  const ElemType opp0 =
       Triangle{triangle(1), triangle(2), point}.GetAreaXYProjection();
-  ElemType area20 =
+  const ElemType opp1 =
       Triangle{triangle(2), triangle(0), point}.GetAreaXYProjection();
 
-  return {area01 / triangle_area, area12 / triangle_area,
-          area20 / triangle_area, 0};
+  return {opp0 / triangle_area, opp1 / triangle_area, opp2 / triangle_area,
+          0};
 }
 
 Linear::ElemType Renderer::MultiplyColor(const Color& color,
@@ -301,37 +334,95 @@ void Renderer::RasterizeTriangle(TriangleData& triangle_data,
   triangle_data.vertices.Transform(camera.GetFullFrustumMatrix());
 
   Point4 normalize_point;
+  ElemType sx[3]{};
+  ElemType sy[3]{};
+
   for (Index i = 0; i < 3; ++i) {
-    normalize_point(i) = 1 / triangle_data.vertices(i)(3);
-    triangle_data.vertices(i) = triangle_data.vertices(i) * normalize_point(i);
-    triangle_data.vertices(i)(0) =
-        ConvertToScreenX(window_size, triangle_data.vertices(i)(0));
-    triangle_data.vertices(i)(1) =
-        ConvertToScreenY(window_size, triangle_data.vertices(i)(1));
+    const ElemType inv_w = 1.0 / triangle_data.vertices(i)(3);
+    normalize_point(i) = inv_w;
+
+    Point4 ndc = triangle_data.vertices(i) * inv_w;
+    const ElemType ndc_x = ndc(0);
+    const ElemType ndc_y = ndc(1);
+    const ElemType ndc_z = ndc(2);
+
+    sx[i] = (ndc_x + 1.0) * 0.5 * static_cast<ElemType>(window_size.width - 1);
+    sy[i] =
+        (1.0 - (ndc_y + 1.0) * 0.5) * static_cast<ElemType>(window_size.height - 1);
+    triangle_data.vertices(i)(0) = sx[i];
+    triangle_data.vertices(i)(1) = sy[i];
+    triangle_data.vertices(i)(2) = ndc_z;
+    triangle_data.vertices(i)(3) = 0;
   }
 
+  const ElemType invw0 = normalize_point(0);
+  const ElemType invw1 = normalize_point(1);
+  const ElemType invw2 = normalize_point(2);
+  const ElemType uow0 = triangle_cpy.texture_coords(0)(0) * invw0;
+  const ElemType uow1 = triangle_cpy.texture_coords(1)(0) * invw1;
+  const ElemType uow2 = triangle_cpy.texture_coords(2)(0) * invw2;
+  const ElemType vow0 = triangle_cpy.texture_coords(0)(1) * invw0;
+  const ElemType vow1 = triangle_cpy.texture_coords(1)(1) * invw1;
+  const ElemType vow2 = triangle_cpy.texture_coords(2)(1) * invw2;
+
   ElemType triangle_area = triangle_data.vertices.GetAreaXYProjection();
+  if (std::abs(triangle_area) < kEPS) {
+    return;
+  }
 
   OffsetedVector bound_box_borders =
       GetBoundingBoxBorders(triangle_data, window_size);
 
-  for (Index i = bound_box_borders.begin(1); i <= bound_box_borders.end(1);
-       ++i) {
-    for (Index j = bound_box_borders.begin(0); j <= bound_box_borders.end(0);
-         ++j) {
+  for (Index j = bound_box_borders.begin(0); j <= bound_box_borders.end(0);
+      ++j) {
+    for (Index i = bound_box_borders.begin(1); i <= bound_box_borders.end(1);
+        ++i) {
+      const ElemType px = static_cast<ElemType>(j) + 0.5;
+      const ElemType py = static_cast<ElemType>(i) + 0.5;
+
       Point4 barycentric_point =
-          ComputeBarycentric({ElemType(j), ElemType(i), 0, 0},
-                             triangle_data.vertices, triangle_area);
+          ComputeBarycentric({px, py, 0, 0}, triangle_data.vertices,
+                             triangle_area);
       if (barycentric_point(0) >= -kEPS && barycentric_point(1) >= -kEPS &&
           barycentric_point(2) >= -kEPS) {
-        ElemType depth =
-            triangle_data.vertices.GetPointByBarycentric(barycentric_point)(2);
+        ElemType norm_coeff = 0;
+        for (Index n = 0; n < 3; ++n) {
+          norm_coeff += barycentric_point(n) * normalize_point(n);
+        }
+
+        if (std::abs(norm_coeff) < kEPS) {
+          continue;
+        }
+
+        Point4 perspective_barycentric;
+        for (Index n = 0; n < 3; ++n) {
+          perspective_barycentric(n) =
+              (barycentric_point(n) * normalize_point(n)) / norm_coeff;
+        }
+
+        perspective_barycentric(3) = 0;
+
+        ElemType depth = triangle_data.vertices.GetPointByBarycentric(
+            perspective_barycentric)(2);
 
         ElemType intensity = light_manager_.ComputeLightning(
-            {}, triangle_cpy, barycentric_point, lights);
+            {}, triangle_cpy, perspective_barycentric, lights);
 
-        Point4 texture_coord = ConstructTextureCoord(
-            triangle_cpy, barycentric_point, normalize_point);
+        const ElemType inv_w_at_p =
+            EvalAffinePlane2D(sx[0], sy[0], invw0, sx[1], sy[1], invw1, sx[2],
+                              sy[2], invw2, px, py);
+        if (std::abs(inv_w_at_p) < kEPS) {
+          continue;
+        }
+        const ElemType u_at_p =
+            EvalAffinePlane2D(sx[0], sy[0], uow0, sx[1], sy[1], uow1, sx[2],
+                              sy[2], uow2, px, py) /
+            inv_w_at_p;
+        const ElemType v_at_p =
+            EvalAffinePlane2D(sx[0], sy[0], vow0, sx[1], sy[1], vow1, sx[2],
+                              sy[2], vow2, px, py) /
+            inv_w_at_p;
+        Point4 texture_coord{u_at_p, v_at_p, 0, 0};
 
         Color texture_color = GetTextureColor(material, texture_coord);
 
@@ -413,21 +504,25 @@ Linear::Detail::Height Renderer::ConvertToScreenY(WindowSize window_size,
 
 Linear::OffsetedVector Renderer::GetBoundingBoxBorders(
     const TriangleData& triangle_data, WindowSize window_size) {
-  Point4 begin{std::max(0.0, std::min({triangle_data.vertices(0)(0),
-                                       triangle_data.vertices(1)(0),
-                                       triangle_data.vertices(2)(0)})),
-               std::max(0.0, std::min({triangle_data.vertices(0)(1),
-                                       triangle_data.vertices(1)(1),
-                                       triangle_data.vertices(2)(1)})),
+  ElemType min_x = std::min({triangle_data.vertices(0)(0),
+                             triangle_data.vertices(1)(0),
+                             triangle_data.vertices(2)(0)});
+  ElemType max_x = std::max({triangle_data.vertices(0)(0),
+                             triangle_data.vertices(1)(0),
+                             triangle_data.vertices(2)(0)});
+  ElemType min_y = std::min({triangle_data.vertices(0)(1),
+                             triangle_data.vertices(1)(1),
+                             triangle_data.vertices(2)(1)});
+  ElemType max_y = std::max({triangle_data.vertices(0)(1),
+                             triangle_data.vertices(1)(1),
+                             triangle_data.vertices(2)(1)});
+
+  Point4 begin{std::max(0.0, std::floor(min_x)), std::max(0.0, std::floor(min_y)),
                0, 0};
-  Point4 end{std::min(window_size.width - 1.0,
-                      std::max({triangle_data.vertices(0)(0),
-                                triangle_data.vertices(1)(0),
-                                triangle_data.vertices(2)(0)})),
-             std::min(window_size.height - 1.0,
-                      std::max({triangle_data.vertices(0)(1),
-                                triangle_data.vertices(1)(1),
-                                triangle_data.vertices(2)(1)})),
+  Point4 end{std::min(static_cast<ElemType>(window_size.width - 1),
+                      std::ceil(max_x)),
+             std::min(static_cast<ElemType>(window_size.height - 1),
+                      std::ceil(max_y)),
              0, 0};
   return {begin, end};
 }
