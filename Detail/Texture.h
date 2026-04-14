@@ -20,7 +20,7 @@ public:
   Texture() = default;
 
   Texture(const Colors& pixels, const Height& height, const Width& width)
-      : texture_data_(pixels), width_(width), height_(height) {
+      : texture_data_(pixels), height_(height), width_(width) {
   }
 
   Detail::Color Sample(const Vector4& texture_coords) const {

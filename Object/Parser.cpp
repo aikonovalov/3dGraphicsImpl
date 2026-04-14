@@ -187,18 +187,18 @@ Object ObjParser::Parse(const std::string& filepath) {
         Linear::Triangle tri(vertices[vi[1]], vertices[vi[2]], vertices[vi[0]]);
         Linear::Triangle norm_tri;
         if (!normals.empty() && ni[0] >= 0) {
-          norm_tri(0) = normals[ni[0]];
-          norm_tri(1) = normals[ni[1]];
-          norm_tri(2) = normals[ni[2]];
+          norm_tri(0) = normals[ni[1]];
+          norm_tri(1) = normals[ni[2]];
+          norm_tri(2) = normals[ni[0]];
         } else {
           auto nn = tri.GetNormal();
           norm_tri = Linear::Triangle(nn, nn, nn);
         }
         Linear::Triangle uv_tri;
         if (!texcoords.empty() && ti[0] >= 0) {
-          uv_tri(0) = texcoords[ti[0]];
-          uv_tri(1) = texcoords[ti[1]];
-          uv_tri(2) = texcoords[ti[2]];
+          uv_tri(0) = texcoords[ti[1]];
+          uv_tri(1) = texcoords[ti[2]];
+          uv_tri(2) = texcoords[ti[0]];
         }
         TriangleData td(tri, norm_tri, uv_tri);
         if (!current_mtl.empty()) {
